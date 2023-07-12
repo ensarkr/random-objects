@@ -311,9 +311,9 @@ class RandomNumbersClass extends GeneratorFactory {
   /**
    * @param { number } starting - minimum number (included)
    * @param { number } ending - maximum number (excluded)
-   * @param { object } options
-   * + onlyIntegers?: boolean = false
-   * + maximumDigitsAfterPoint?: number
+   * @param { object } options - properties of options object
+   * - onlyIntegers?: boolean = false
+   * - maximumDigitsAfterPoint?: number
    * @returns { number  } Returns number
    * @example randomNumber( 0, 10, { maximumDigitsAfterPoint: 2 })  ===>   4.3
    */
@@ -324,14 +324,14 @@ class RandomNumbersClass extends GeneratorFactory {
   /**
    * @param { number } starting - minimum number (included)
    * @param { number } ending - maximum number (excluded)
-   * @param { object} options
-   * + onlyIntegers?: boolean = false
-   * + maximumDigitsAfterPoint?: number
-   * + unique?: boolean = false
-   * + numberOfItems?: number
-   * + customMap?: (item: number | string, index: number) => any
-   * + customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * + showLogs?: boolean = false
+   * @param { object} options - properties of options object
+   * - onlyIntegers?: boolean = false
+   * - maximumDigitsAfterPoint?: number
+   * - unique?: boolean = false
+   * - numberOfItems?: number
+   * - customMap?: (item: number | string, index: number) => any
+   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - showLogs?: boolean = false
    * @returns { array } Returns array of random numbers
    * @example randomNumbers( 0, 10, { numberOfItems: 9, maximumDigitsAfterPoint: 2 })  ===>  [ 5.61, 4.36, 7.28, 0.3, 7.74, 5.93, 8.23, 1.36, 8.24]
    */
@@ -404,12 +404,12 @@ class RandomHexColorClass extends GeneratorFactory {
   };
 
   /**
-   * @param { object } options
-   * + unique?: boolean = false
-   * + numberOfItems?: number
-   * + customMap?: (item: number | string, index: number) => any
-   * + customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * + showLogs?: boolean = false
+   * @param { object } options - properties of options object
+   * - unique?: boolean = false
+   * - numberOfItems?: number
+   * - customMap?: (item: number | string, index: number) => any
+   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - showLogs?: boolean = false
    * @returns { array } Returns array of hex colors
    * @example randomHexColors({ numberOfItems:5 })  ===>  [ "#445639", "#5a6e38", "#affd9d", "#e5d0b2", "#416276" ]
    */
@@ -488,7 +488,7 @@ class RandomFromArrayClass extends GeneratorFactory {
 
   /**
    * @param { array } arrayOfItems - Array of different elements
-   * @returns { array } Returns an element that randomly chosen from given array
+   * @returns { any } Returns an element that randomly chosen from given array
    * @example randomFromArray([ 9, 8, 4, {test:99})  ===>   8
    */
   public randomFromArray: randomFromArrayType = (arrayOfItems) => {
@@ -497,13 +497,13 @@ class RandomFromArrayClass extends GeneratorFactory {
 
   /**
    * @param { array } arrayOfItems - Array of different elements
-   * @param { object } options
-   * + keepOrder?: boolean = false
-   * + unique?: boolean = false
-   * + numberOfItems?: number
-   * + customMap?: (item: number | string, index: number) => any
-   * + customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * + showLogs?: boolean = false
+   * @param { object } options - properties of options object
+   * - keepOrder?: boolean = false
+   * - unique?: boolean = false
+   * - numberOfItems?: number
+   * - customMap?: (item: number | string, index: number) => any
+   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - showLogs?: boolean = false
    * @returns { array } Returns array of random elements that chosen from given array
    * @description By setting keepOrder to true it can create array without randomizing
    * @example randomsFromArray([ 9, 8, 4, {test:99}, [45]], { numberOfItems:4, unique:true })  ===>  [ [45], {test:99}, 9, 8 ]
@@ -708,8 +708,8 @@ class randomIDClass extends GeneratorFactory {
   /**
    * @param { number } minIDLength - min id length
    * @param { number } maxIDLength - max id length
-   * @param { object } options
-   * + charLib?: string[] = ["number", "letter" ,"symbol"]
+   * @param { object } options - properties of options object
+   * - charLib?: string[] = ["number", "letter" ,"symbol"]
    * @returns { string } Returns a string
    * @description Available libraries are  number, letter and symbol. To include a library put in charLib array as string.
    * @example randomID(5, 6)  ===>  "4//3A"
@@ -721,13 +721,13 @@ class randomIDClass extends GeneratorFactory {
   /**
    * @param { number } minIDLength - min id length
    * @param { number } maxIDLength - max id length
-   * @param { object } options
-   * + charLib?: string[] = ["number", "letter" ,"symbol"]
-   * + unique?: boolean = false
-   * + numberOfItems?: number
-   * + customMap?: (item: number | string, index: number) => any
-   * + customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * + showLogs?: boolean = false
+   * @param { object } options - properties of options object
+   * - charLib?: string[] = ["number", "letter" ,"symbol"]
+   * - unique?: boolean = false
+   * - numberOfItems?: number
+   * - customMap?: (item: number | string, index: number) => any
+   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - showLogs?: boolean = false
    * @returns { array } Returns array of random strings
    * @description Available libraries are  number, letter and symbol. To include a library put in charLib array as string.
    * @example   randomIDs(5, 6, {numberOfItems: 4, unique: true, charLib: ["symbol", "letter"],})  ===> [ '_+|%Y', 'wzzn$', "sO;'Y`", '_KNdkn' ]
@@ -800,13 +800,13 @@ class GradualValueClass extends GeneratorFactory {
 
   /**
    * @param { number } starting - Starting number
-   * @param { object } options
-   * + incrementValue?: number = 1
-   * + unique?: boolean = false
-   * + numberOfItems?: number
-   * + customMap?: (item: number | string, index: number) => any
-   * + customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * + showLogs?: boolean = false
+   * @param { object } options - properties of options object
+   * - incrementValue?: number = 1
+   * - unique?: boolean = false
+   * - numberOfItems?: number
+   * - customMap?: (item: number | string, index: number) => any
+   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - showLogs?: boolean = false
    * @returns { array } Returns an array started with starting number and increased every item by incrementValue
    * @description It can be used for gradually increase a value between objects
    * @example gradualValue(5,{ numberOfItems:3, incrementValue: 5 })  ===>  [ 5, 10, 15 ]
@@ -864,12 +864,12 @@ class RandomCustomFunctionClass extends GeneratorFactory {
 
   /**
    * @param { function } customFunction Custom function that returns one element
-   * @param { object } options
-   * + unique?: boolean = false
-   * + numberOfItems?: number
-   * + customMap?: (item: number | string, index: number) => any
-   * + customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * + showLogs?: boolean = true
+   * @param { object } options - properties of options object
+   * - unique?: boolean = false
+   * - numberOfItems?: number
+   * - customMap?: (item: number | string, index: number) => any
+   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - showLogs?: boolean = true
    * @returns { array }
    * @example randomCustomFunction(()=>{ return Date.now() },{ numberOfItems:3, unique: true })  ===>  [ 1686916732354, 1686916732355, 1686916732356 ]
    */
@@ -967,9 +967,9 @@ class RandomStringClass extends GeneratorFactory {
   /**
    * @param { number } minNumberOfWords - min number of words that result will contain
    * @param { number } maxNumberOfWords - max number of words that result will contain
-   * @param { object } options
-   * + separator?: string = ""
-   * + lib?: string[] = ["name", "adjective", "country", "noun"]
+   * @param { object } options - properties of options object
+   * - separator?: string = ""
+   * - lib?: string[] = ["name", "adjective", "country", "noun"]
    * @returns { string } Returns string
    * @description Available libraries are name, adjective, country and noun. To include a library put in lib array as string.
    * @example randomString(5, 6)  ===>  "focusedTanzaniacomposedchiefCeylon"
@@ -986,14 +986,14 @@ class RandomStringClass extends GeneratorFactory {
   /**
    * @param { number } minIDLength - min number of words that result will contain
    * @param { number } maxIDLength - max number of words that result will contain
-   * @param { object } options
-   * + separator?: string = ""
-   * + lib?: string[] = ["name", "adjective", "country", "noun"]
-   * + unique?: boolean = false
-   * + numberOfItems?: number
-   * + customMap?: (item: number | string, index: number) => any
-   * + customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * + showLogs?: boolean = false
+   * @param { object } options - properties of options object
+   * - separator?: string = ""
+   * - lib?: string[] = ["name", "adjective", "country", "noun"]
+   * - unique?: boolean = false
+   * - numberOfItems?: number
+   * - customMap?: (item: number | string, index: number) => any
+   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - showLogs?: boolean = false
    * @returns { Array } Returns Array of strings
    * @description Available libraries are name, adjective, country and noun. To include a library put in lib array as string.
    * @example randomStrings(1, 1, {lib: ["country"], numberOfItems: 5})  ===>  [ "Poland", "State of Palestine", "Austria", "Belize", "Bhutan" ]
@@ -1155,15 +1155,15 @@ class RandomEmailClass extends GeneratorFactory {
   };
 
   /**
-   * @param { object } options
-   * + firstPartLib?: string[] = ["name"]
-   * + secondPartLib?: string[] = ["noun"]
-   * + firstPartMinWords?: number = 1
-   * + firstPartMaxWords?: number = 3
-   * + secondPartMinWords?: number = 1
-   * + secondPartMaxWords?: number = 2
+   * @param { object } options - properties of options object
+   * - firstPartLib?: string[] = ["name"]
+   * - secondPartLib?: string[] = ["noun"]
+   * - firstPartMinWords?: number = 1
+   * - firstPartMaxWords?: number = 3
+   * - secondPartMinWords?: number = 1
+   * - secondPartMaxWords?: number = 2
    * @returns { string } Returns email
-   * @description  Available libraries are name, adjective, country and noun. To include a library put in firstPartLib and secondPartLib arrays as string. First part is before @, second part is after @ excluding tld part.
+   * @description  Available libraries are name, adjective, country and noun. To include a library put in firstPartLib and secondPartLib arrays as string. First part is before \@, second part is after \@ excluding tld part.
    * @example randomEmail()  ===>  "RoswellNoelia@university.dk"
    */
   randomEmail: randomEmailType = (options = {}) => {
@@ -1171,20 +1171,20 @@ class RandomEmailClass extends GeneratorFactory {
   };
 
   /**
-   * @param { object } options 
-   * + firstPartLib?: string[] = ["name"]
-   * + secondPartLib?: string[] = ["noun"]
-   * + firstPartMinWords?: number = 1
-   * + firstPartMaxWords?: number = 3
-   * + secondPartMinWords?: number = 1
-   * + secondPartMaxWords?: number = 2
-   * + unique?: boolean = false
-   * + numberOfItems?: number
-   * + customMap?: (item: number | string, index: number) => any
-   * + customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * + showLogs?: boolean = false
+   * @param { object } options - properties of options object
+   * - firstPartLib?: string[] = ["name"]
+   * - secondPartLib?: string[] = ["noun"]
+   * - firstPartMinWords?: number = 1
+   * - firstPartMaxWords?: number = 3
+   * - secondPartMinWords?: number = 1
+   * - secondPartMaxWords?: number = 2
+   * - unique?: boolean = false
+   * - numberOfItems?: number
+   * - customMap?: (item: number | string, index: number) => any
+   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - showLogs?: boolean = false
    * @returns { Array } Returns Array of emails
-   * @description  Available libraries are name, adjective, country and noun. To include a library put in firstPartLib and secondPartLib arrays as string. First part is before @, second part is after @ excluding tld part. 
+   * @description  Available libraries are name, adjective, country and noun. To include a library put in firstPartLib and secondPartLib arrays as string. First part is before \@, second part is after \@ excluding tld part. 
    * @example   randomEmails({ firstPartMinWords: 1, firstPartMaxWords: 1, secondPartMinWords: 1, secondPartMaxWords: 1, numberOfItems: 2,
   })  ===>  [ "Baldwin@arrival.ch", "Mafalda@expression.se" ]
    */
@@ -1295,14 +1295,14 @@ type randomObjectsType = (
  * @param { number } numberOfItems
  * @returns { Array } Returns array of objects
  * @descriptions Listed functions should be used without specifying options.numberOfItems otherwise they will be accepted as one item.
- * + randomNumbers
- * + randomHexColors
- * + gradualValue
- * + randomsFromArray
- * + randomIDs
- * + randomCustomFunction
- * + randomStrings
- * + randomEmails
+ * - randomNumbers
+ * - randomHexColors
+ * - gradualValue
+ * - randomsFromArray
+ * - randomIDs
+ * - randomCustomFunction
+ * - randomStrings
+ * - randomEmails
  * @example   randomObjects({
  * Number: randomNumbers(4, 50, { onlyIntegers: true }),
  * Hex: randomHexColors({ unique: true }),
