@@ -1,17 +1,17 @@
-import { listOfNames } from "./sources/listOfNames";
-import { listOfAdjectives } from "./sources/listOfAdjectives";
-import { listOfCountries } from "./sources/listOfCountries";
-import { listOfNouns } from "./sources/listOfNouns";
-import { listOfTLDs } from "./sources/listOfTLDs";
+import { listOfNames } from "./sources/listOfNames.js";
+import { listOfAdjectives } from "./sources/listOfAdjectives.js";
+import { listOfCountries } from "./sources/listOfCountries.js";
+import { listOfNouns } from "./sources/listOfNouns.js";
+import { listOfTLDs } from "./sources/listOfTLDs.js";
 
 interface generateFunctionReturn {
-  items: any[] | null;
+  items: unknown[] | null;
   functionData: functionData;
 }
 
 interface functionData {
   arguments: functionArguments;
-  functionCall: allFunctionTypes;
+  functionCall: generateFromArgObjectType;
 }
 
 interface functionArguments {
@@ -22,14 +22,10 @@ interface functionArguments {
 interface baseFunctionOptions {
   numberOfItems?: number;
   unique?: boolean;
-  customMap?(item: number | string, index: number): number | string;
-  customCompare?(
-    item: number | string,
-    items: (number | string)[],
-    index: number
-  ): boolean;
+  customMap?(item: unknown, index: number): number | string;
+  customCompare?(item: unknown, items: unknown[], index: number): boolean;
   customLog?(
-    item: number | string,
+    item: unknown,
     index: number,
     description: string,
     functionName: string
@@ -57,14 +53,12 @@ type allMainOptionTypes =
   | randomStringsOptions
   | randomEmailsOptions;
 
-type allFunctionTypes = any;
-
 type generateItemType = (
   inputs: allMainInputTypes,
   options: allMainOptionTypes,
   index: number,
-  sameProperties?: any
-) => { item: string; sameProperties?: any };
+  sameProperties?: object
+) => { item: unknown; sameProperties?: object };
 
 type uniqueErrorCheckType = (
   inputs: allMainInputTypes,
@@ -82,12 +76,11 @@ type generateFromArgObjectType = ({
 }: {
   inputs: allMainInputTypes;
   options: allMainOptionTypes;
-}) => any[] | generateFunctionReturn | string | number;
+}) => unknown[] | generateFunctionReturn;
 
 abstract class GeneratorFactory {
   constructor() {}
 
-  protected baseOptionsStringArray: string[];
   protected abstract functionName: string;
   protected abstract generateItem: generateItemType;
   protected abstract uniqueErrorCheck: uniqueErrorCheckType;
@@ -97,12 +90,14 @@ abstract class GeneratorFactory {
     inputs: allMainInputTypes,
     options: allMainOptionTypes
   ) => {
-    let resultObject: generateFunctionReturn = this.returnObjectWithArguments({
-      inputs,
-      options,
-    });
+    const resultObject: generateFunctionReturn = this.returnObjectWithArguments(
+      {
+        inputs,
+        options,
+      }
+    );
 
-    let sameProperties: any;
+    let sameProperties: object;
 
     if (options.numberOfItems === undefined) {
       resultObject.items = null;
@@ -113,11 +108,10 @@ abstract class GeneratorFactory {
         options.unique = this.uniqueErrorCheck(inputs, options);
       }
 
-      let items: (number | string)[] = [];
-      let item: number | string;
+      const items: unknown[] = [];
 
       for (let index = 0; index < options.numberOfItems; index++) {
-        let { item, sameProperties: newSameProperties } = this.generateItem(
+        const { item, sameProperties: newSameProperties } = this.generateItem(
           inputs,
           options,
           index,
@@ -145,7 +139,7 @@ abstract class GeneratorFactory {
   protected developerLog(
     proceed: boolean,
     itemNumber: number,
-    value: string | number,
+    value: unknown,
     description: string
   ): void {
     if (proceed) {
@@ -154,9 +148,9 @@ abstract class GeneratorFactory {
   }
 
   protected logsAndCustomFunctions(
-    item: any,
+    item: unknown,
     index: number,
-    items: any[],
+    items: unknown[],
     options: allMainOptionTypes
   ) {
     let compareResult: boolean = true;
@@ -224,7 +218,7 @@ abstract class GeneratorFactory {
   }
 
   protected returnObjectWithArguments(
-    argObject: functionArguments & any
+    argObject: functionArguments
   ): generateFunctionReturn {
     return {
       items: null,
@@ -256,13 +250,13 @@ type randomNumberType = (
   starting: number,
   ending: number,
   options?: randomNumberOptions
-) => string | number;
+) => number;
 
 type randomNumbersType = (
   starting: number,
   ending: number,
   options?: randomNumbersOptions
-) => generateFunctionReturn | any[];
+) => generateFunctionReturn | unknown[];
 
 class RandomNumbersClass extends GeneratorFactory {
   constructor() {
@@ -314,7 +308,7 @@ class RandomNumbersClass extends GeneratorFactory {
       options.maximumDigitsAfterPoint !== undefined
     ) {
       const { maximumDigitsAfterPoint } = options;
-      let afterPoint =
+      const afterPoint =
         maximumDigitsAfterPoint === 0
           ? 0
           : Math.floor(
@@ -343,7 +337,7 @@ class RandomNumbersClass extends GeneratorFactory {
    * @example randomNumber( 0, 10, { maximumDigitsAfterPoint: 2 })  ===>   4.3
    */
   public randomNumber: randomNumberType = (starting, ending, options = {}) => {
-    return this.generateItem({ starting, ending }, options, 0).item;
+    return this.generateItem({ starting, ending }, options, 0).item as number;
   };
 
   /**
@@ -366,7 +360,7 @@ class RandomNumbersClass extends GeneratorFactory {
     ending,
     options = {}
   ) => {
-    let dataObject = this.generateArray({ starting, ending }, options);
+    const dataObject = this.generateArray({ starting, ending }, options);
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
@@ -388,11 +382,11 @@ interface randomHexColorOptions {}
 
 interface randomHexColorsInputs {}
 
-type randomHexColorType = (options?: randomHexColorOptions) => string | number;
+type randomHexColorType = (options?: randomHexColorOptions) => string;
 
 type randomHexColorsType = (
   options?: randomHexColorsOptions
-) => generateFunctionReturn | any[];
+) => generateFunctionReturn | unknown[];
 
 class RandomHexColorClass extends GeneratorFactory {
   constructor() {
@@ -412,7 +406,7 @@ class RandomHexColorClass extends GeneratorFactory {
   };
 
   protected generateItem: generateItemType = () => {
-    let item =
+    const item =
       "#" +
       Math.floor(Math.random() * 16777216)
         .toString(16)
@@ -426,7 +420,7 @@ class RandomHexColorClass extends GeneratorFactory {
    * @example randomHexColor()  ===>   "#445639"]
    */
   randomHexColor: randomHexColorType = () => {
-    return this.generateItem({}, {}, 0).item;
+    return this.generateItem({}, {}, 0).item as string;
   };
 
   /**
@@ -441,12 +435,12 @@ class RandomHexColorClass extends GeneratorFactory {
    * @example randomHexColors({ numberOfItems:5 })  ===>  [ "#445639", "#5a6e38", "#affd9d", "#e5d0b2", "#416276" ]
    */
   randomHexColors: randomHexColorsType = (options = {}) => {
-    let dataObject = this.generateArray({}, options);
+    const dataObject = this.generateArray({}, options);
 
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  protected generateFromArgObject = ({ inputs, options }) => {
+  protected generateFromArgObject = ({ options }) => {
     return this.randomHexColors(options);
   };
 }
@@ -462,18 +456,18 @@ interface randomsFromArrayOptions
 interface randomFromArrayOptions {}
 
 interface randomsFromArrayInputs {
-  arrayOfItems: any[];
+  arrayOfItems: unknown[];
 }
 
 type randomFromArrayType = (
-  arrayOfItems: any[],
+  arrayOfItems: unknown[],
   options?: randomFromArrayOptions
-) => string | number;
+) => unknown;
 
 type randomsFromArrayType = (
-  arrayOfItems: any[],
+  arrayOfItems: unknown[],
   options?: randomsFromArrayOptions
-) => generateFunctionReturn | any[];
+) => generateFunctionReturn | unknown[];
 
 class RandomFromArrayClass extends GeneratorFactory {
   constructor() {
@@ -490,7 +484,7 @@ class RandomFromArrayClass extends GeneratorFactory {
     let { arrayOfItems } = inputs;
     arrayOfItems = [...new Set(arrayOfItems)];
 
-    let maximumNumberOfItems = arrayOfItems.length;
+    const maximumNumberOfItems = arrayOfItems.length;
 
     if (maximumNumberOfItems < options.numberOfItems) {
       this.showUniqueError();
@@ -504,9 +498,7 @@ class RandomFromArrayClass extends GeneratorFactory {
     options: randomsFromArrayOptions,
     index
   ) => {
-    let item;
-
-    item = options.keepOrder
+    const item = options.keepOrder
       ? arrayOfItems[index % arrayOfItems.length]
       : arrayOfItems[Math.floor(Math.random() * arrayOfItems.length)];
 
@@ -540,7 +532,7 @@ class RandomFromArrayClass extends GeneratorFactory {
     arrayOfItems,
     options = {}
   ) => {
-    let dataObject = this.generateArray({ arrayOfItems }, options);
+    const dataObject = this.generateArray({ arrayOfItems }, options);
 
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
@@ -565,13 +557,13 @@ type randomIDType = (
   minIDLength: number,
   maxIDLength: number,
   options?: randomIDOptions
-) => string | Number;
+) => string;
 
 type randomIDsType = (
   minIDLength: number,
   maxIDLength: number,
   options?: randomIDsOptions
-) => generateFunctionReturn | any[];
+) => generateFunctionReturn | unknown[];
 
 class randomIDClass extends GeneratorFactory {
   constructor() {
@@ -677,21 +669,20 @@ class randomIDClass extends GeneratorFactory {
     { minIDLength, maxIDLength }: randomIDsInputs,
     { charLib = ["number", "letter", "symbol"] }: randomIDsOptions
   ) => {
-    let item: string = "";
-    let chars: string[] = [];
+    const chars: string[] = [];
 
-    let IDLength = Math.floor(
+    const IDLength = Math.floor(
       Math.random() * (maxIDLength - minIDLength + 1) + minIDLength
     );
 
     for (let i = 0; i < IDLength; i++) {
-      let randomLib =
+      const randomLib =
         this.charLibObject[charLib[Math.floor(Math.random() * charLib.length)]];
 
       chars[i] = randomLib[Math.floor(Math.random() * randomLib.length)];
     }
 
-    item = chars.join("");
+    const item = chars.join("");
 
     return { item };
   };
@@ -743,7 +734,8 @@ class randomIDClass extends GeneratorFactory {
    * @example randomID(5, 6)  ===>  "4//3A"
    */
   public randomID: randomIDType = (minIDLength, maxIDLength, options = {}) => {
-    return this.generateItem({ minIDLength, maxIDLength }, options, 0).item;
+    return this.generateItem({ minIDLength, maxIDLength }, options, 0)
+      .item as string;
   };
 
   /**
@@ -766,7 +758,10 @@ class randomIDClass extends GeneratorFactory {
     maxIDLength,
     options = {}
   ) => {
-    let dataObject = this.generateArray({ minIDLength, maxIDLength }, options);
+    const dataObject = this.generateArray(
+      { minIDLength, maxIDLength },
+      options
+    );
 
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
@@ -792,7 +787,7 @@ interface gradualValueInputs {
 type gradualValueType = (
   starting: number,
   options?: gradualValueOptions
-) => generateFunctionReturn | any[];
+) => generateFunctionReturn | unknown[];
 
 class GradualValueClass extends GeneratorFactory {
   constructor() {
@@ -807,9 +802,7 @@ class GradualValueClass extends GeneratorFactory {
     options: gradualValueOptions,
     index
   ) => {
-    let item;
-
-    item = starting + index * options.incrementValue;
+    const item = starting + index * options.incrementValue;
 
     return { item };
   };
@@ -842,7 +835,7 @@ class GradualValueClass extends GeneratorFactory {
    * @example gradualValue(5,{ numberOfItems:3, incrementValue: 5 })  ===>  [ 5, 10, 15 ]
    */
   public gradualValue: gradualValueType = (starting, options = {}) => {
-    let dataObject = this.generateArray({ starting }, options);
+    const dataObject = this.generateArray({ starting }, options);
 
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
@@ -857,13 +850,13 @@ class GradualValueClass extends GeneratorFactory {
 interface randomCustomFunctionOptions extends baseFunctionOptions {}
 
 interface randomCustomFunctionInputs {
-  customFunction: any;
+  customFunction: (index: number) => unknown;
 }
 
 type randomCustomFunctionType = (
-  customFunction: any,
+  customFunction: (index: number) => unknown,
   options?: randomCustomFunctionOptions
-) => generateFunctionReturn | any[];
+) => generateFunctionReturn | unknown[];
 
 class RandomCustomFunctionClass extends GeneratorFactory {
   constructor() {
@@ -875,12 +868,10 @@ class RandomCustomFunctionClass extends GeneratorFactory {
 
   protected generateItem: generateItemType = (
     { customFunction }: randomCustomFunctionInputs,
-    options: randomCustomFunctionOptions,
+    options,
     index
-  ): any => {
-    let item;
-
-    item = customFunction();
+  ) => {
+    const item = customFunction(index);
 
     return { item };
   };
@@ -889,7 +880,7 @@ class RandomCustomFunctionClass extends GeneratorFactory {
     inputs: randomCustomFunctionInputs,
     options: randomCustomFunctionOptions
   ) => {
-    return undefined;
+    return options.unique;
   };
 
   /**
@@ -912,7 +903,7 @@ class RandomCustomFunctionClass extends GeneratorFactory {
       options.showLogs = true;
     }
 
-    let dataObject = this.generateArray({ customFunction }, options);
+    const dataObject = this.generateArray({ customFunction }, options);
 
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
@@ -951,7 +942,7 @@ type randomStringsType = (
   minNumberOfWords: number,
   maxNumberOfWords: number,
   options?: randomStringsOptions
-) => generateFunctionReturn | any[];
+) => generateFunctionReturn | unknown[];
 
 class RandomStringClass extends GeneratorFactory {
   constructor() {
@@ -972,17 +963,16 @@ class RandomStringClass extends GeneratorFactory {
     {
       lib = ["name", "adjective", "country", "noun"],
       separator = "",
-    }: randomStringsOptions,
-    index: number
+    }: randomStringsOptions
   ) => {
     let item: string = "";
-    let wordCount = Math.floor(
+    const wordCount = Math.floor(
       Math.random() * (maxNumberOfWords - minNumberOfWords + 1) +
         minNumberOfWords
     );
 
     for (let i = 0; i < wordCount; i++) {
-      let randomLib =
+      const randomLib =
         this.stringLib[lib[Math.floor(Math.random() * lib.length)]];
 
       item += randomLib[Math.floor(Math.random() * randomLib.length)];
@@ -1011,7 +1001,7 @@ class RandomStringClass extends GeneratorFactory {
     options = {}
   ) => {
     return this.generateItem({ minNumberOfWords, maxNumberOfWords }, options, 0)
-      .item;
+      .item as string;
   };
 
   /**
@@ -1035,7 +1025,7 @@ class RandomStringClass extends GeneratorFactory {
     maxNumberOfWords,
     options = {}
   ) => {
-    let dataObject = this.generateArray(
+    const dataObject = this.generateArray(
       { minNumberOfWords, maxNumberOfWords },
       options
     );
@@ -1114,11 +1104,11 @@ interface randomEmailOptions {
 
 interface randomEmailsInputs {}
 
-type randomEmailType = (options?: randomEmailOptions) => string | number;
+type randomEmailType = (options?: randomEmailOptions) => string;
 
 type randomEmailsType = (
   options?: randomEmailsOptions
-) => generateFunctionReturn | any[];
+) => generateFunctionReturn | unknown[];
 
 class RandomEmailClass extends GeneratorFactory {
   constructor() {
@@ -1146,21 +1136,20 @@ class RandomEmailClass extends GeneratorFactory {
       firstPartMinWords = 1,
       secondPartMaxWords = 2,
       secondPartMinWords = 1,
-    }: randomEmailsOptions,
-    index: number
+    }: randomEmailsOptions
   ) => {
     let item: string = "";
-    let firstPartWordCount = Math.floor(
+    const firstPartWordCount = Math.floor(
       Math.random() * (firstPartMaxWords - firstPartMinWords + 1) +
         firstPartMinWords
     );
-    let secondPartWordCount = Math.floor(
+    const secondPartWordCount = Math.floor(
       Math.random() * (secondPartMaxWords - secondPartMinWords + 1) +
         secondPartMinWords
     );
 
     for (let i = 0; i < firstPartWordCount; i++) {
-      let randomLib =
+      const randomLib =
         this.stringLib[
           firstPartLib[Math.floor(Math.random() * firstPartLib.length)]
         ];
@@ -1171,7 +1160,7 @@ class RandomEmailClass extends GeneratorFactory {
     item += "@";
 
     for (let i = 0; i < secondPartWordCount; i++) {
-      let randomLib =
+      const randomLib =
         this.stringLib[
           secondPartLib[Math.floor(Math.random() * secondPartLib.length)]
         ];
@@ -1199,7 +1188,7 @@ class RandomEmailClass extends GeneratorFactory {
    * @example randomEmail()  ===>  "RoswellNoelia@university.dk"
    */
   randomEmail: randomEmailType = (options = {}) => {
-    return this.generateItem({}, options, 0).item;
+    return this.generateItem({}, options, 0).item as string;
   };
 
   /**
@@ -1222,7 +1211,7 @@ class RandomEmailClass extends GeneratorFactory {
   })  ===>  [ "Baldwin@arrival.ch", "Mafalda@expression.se" ]
    */
   randomEmails: randomEmailsType = (options = {}) => {
-    let dataObject = this.generateArray({}, options);
+    const dataObject = this.generateArray({}, options);
 
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
@@ -1292,7 +1281,7 @@ class RandomEmailClass extends GeneratorFactory {
       secondPartMaxUniquePossibility += Math.pow(secondPartMaxArrLength, i);
     }
 
-    let maxUniquePossibility =
+    const maxUniquePossibility =
       firstPartMaxUniquePossibility * secondPartMaxUniquePossibility * 30;
 
     if (numberOfItems <= maxUniquePossibility) return true;
@@ -1303,7 +1292,6 @@ class RandomEmailClass extends GeneratorFactory {
   };
 
   protected generateFromArgObject: generateFromArgObjectType = ({
-    inputs,
     options,
   }: {
     inputs: randomEmailsInputs;
@@ -1314,14 +1302,14 @@ class RandomEmailClass extends GeneratorFactory {
 }
 
 interface blueprint {
-  [key: string]: generateFunctionReturn | any;
+  [key: string]: generateFunctionReturn | unknown;
 }
 
 type randomObjectsType = (
   blueprint: blueprint,
   numberOfItems: number,
   options?: { showLogs?: boolean }
-) => any[];
+) => object[];
 
 /**
  * @param { object } blueprint - Object that consists user-defined key and values. Values can be one item, functions that returns one item and functions that listed in description.
@@ -1355,39 +1343,40 @@ const randomObjects: randomObjectsType = (
   numberOfItems,
   { showLogs = false } = {}
 ) => {
-  let keys: string[] = Object.keys(blueprint);
+  const keys: string[] = Object.keys(blueprint);
 
-  let openedBlueprint: blueprint = {};
+  const openedBlueprint = {};
 
-  let resultArray: any[] = [];
+  const resultArray: object[] = [];
 
   for (let i = 0; i < keys.length; i++) {
-    const currentData: generateFunctionReturn | any = blueprint[keys[i]];
+    const currentData: generateFunctionReturn | unknown = blueprint[keys[i]];
 
-    if (!currentData.functionData) {
+    if (!Object.keys(currentData).includes("functionData")) {
       openedBlueprint[keys[i]] = { data: currentData, single: true };
       continue;
+    } else {
+      const functionData: functionData = (currentData as generateFunctionReturn)
+        .functionData;
+      functionData.arguments.options.numberOfItems = numberOfItems;
+      functionData.arguments.options.showLogs = showLogs;
+
+      const { inputs, options } = functionData.arguments;
+
+      const res = functionData.functionCall({
+        inputs,
+        options,
+      });
+
+      openedBlueprint[keys[i]] = { data: res, single: false };
     }
-
-    const functionData: functionData = blueprint[keys[i]].functionData;
-    functionData.arguments.options.numberOfItems = numberOfItems;
-    functionData.arguments.options.showLogs = showLogs;
-
-    const { inputs, options } = functionData.arguments;
-
-    let res = functionData.functionCall({
-      inputs,
-      options,
-    });
-
-    openedBlueprint[keys[i]] = { data: res, single: false };
   }
 
   for (let index = 0; index < numberOfItems; index++) {
     const currentObject = {};
 
     for (let i = 0; i < keys.length; i++) {
-      const currentData: { data: any; single: boolean } =
+      const currentData: { data: unknown; single: boolean } =
         openedBlueprint[keys[i]];
       currentObject[keys[i]] = currentData.single
         ? currentData.data
@@ -1400,34 +1389,16 @@ const randomObjects: randomObjectsType = (
   return resultArray;
 };
 
-let { randomNumber, randomNumbers } = new RandomNumbersClass();
-let { randomHexColor, randomHexColors } = new RandomHexColorClass();
-let { gradualValue } = new GradualValueClass();
-let { randomFromArray, randomsFromArray } = new RandomFromArrayClass();
-let { randomID, randomIDs } = new randomIDClass();
-let { randomCustomFunction } = new RandomCustomFunctionClass();
-let { randomString, randomStrings } = new RandomStringClass();
-let { randomEmail, randomEmails } = new RandomEmailClass();
+const { randomNumber, randomNumbers } = new RandomNumbersClass();
+const { randomHexColor, randomHexColors } = new RandomHexColorClass();
+const { gradualValue } = new GradualValueClass();
+const { randomFromArray, randomsFromArray } = new RandomFromArrayClass();
+const { randomID, randomIDs } = new randomIDClass();
+const { randomCustomFunction } = new RandomCustomFunctionClass();
+const { randomString, randomStrings } = new RandomStringClass();
+const { randomEmail, randomEmails } = new RandomEmailClass();
 
 export = {
-  randomNumber,
-  randomNumbers,
-  randomHexColor,
-  randomHexColors,
-  gradualValue,
-  randomFromArray,
-  randomsFromArray,
-  randomID,
-  randomIDs,
-  randomCustomFunction,
-  randomString,
-  randomStrings,
-  randomEmail,
-  randomEmails,
-  randomObjects,
-};
-
-module.exports = {
   randomNumber,
   randomNumbers,
   randomHexColor,
