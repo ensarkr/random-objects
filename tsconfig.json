@@ -3,6 +3,7 @@
     "target": "ES6",
     "lib": ["DOM", "ESNext"],
     "module": "CommonJS",
-    "outDir": "./build"
+    "outDir": "./build",
+    "declaration": true
   }
 }
