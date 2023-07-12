@@ -1376,7 +1376,7 @@ let { randomCustomFunction } = new RandomCustomFunctionClass();
 let { randomString, randomStrings } = new RandomStringClass();
 let { randomEmail, randomEmails } = new RandomEmailClass();
 
-export {
+export = {
   randomNumber,
   randomNumbers,
   randomHexColor,
