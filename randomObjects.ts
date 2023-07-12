@@ -28,6 +28,12 @@ interface baseFunctionOptions {
     items: (number | string)[],
     index: number
   ): boolean;
+  customLog?(
+    item: number | string,
+    index: number,
+    description: string,
+    functionName: string
+  ): void;
   showLogs?: boolean;
 }
 
@@ -155,18 +161,25 @@ abstract class GeneratorFactory {
   ) {
     let compareResult: boolean = true;
 
-    this.developerLog(options.showLogs, index, item, "item created");
+    if (options.customLog) {
+      options.customLog(item, index, "item created", this.functionName);
+    } else {
+      this.developerLog(options.showLogs, index, item, "item created");
+    }
 
     if (options.customMap) {
       item = options.customMap(item, index) as number | string;
     }
 
-    this.developerLog(
-      options.showLogs && options.customMap !== undefined,
-      index,
-      item,
-      "after map function"
-    );
+    if (options.customLog) {
+      options.customLog(item, index, "after map function", this.functionName);
+    } else
+      this.developerLog(
+        options.showLogs && options.customMap !== undefined,
+        index,
+        item,
+        "after map function"
+      );
 
     if (options.customCompare) {
       compareResult = options.customCompare(item, items, index) as boolean;
@@ -178,16 +191,28 @@ abstract class GeneratorFactory {
       }
     }
 
-    this.developerLog(
-      options.showLogs &&
-        (options.customCompare !== undefined || options.unique),
-      index,
-      item,
-      "after compare function, " +
-        (compareResult
-          ? "no problem occurred"
-          : "this item cannot be used trying again")
-    );
+    if (options.customLog) {
+      options.customLog(
+        item,
+        index,
+        "after compare function, " +
+          (compareResult
+            ? "no problem occurred"
+            : "this item cannot be used trying again"),
+        this.functionName
+      );
+    } else {
+      this.developerLog(
+        options.showLogs &&
+          (options.customCompare !== undefined || options.unique),
+        index,
+        item,
+        "after compare function, " +
+          (compareResult
+            ? "no problem occurred"
+            : "this item cannot be used trying again")
+      );
+    }
 
     if (compareResult) {
       items[index] = item;
@@ -331,6 +356,7 @@ class RandomNumbersClass extends GeneratorFactory {
    * - numberOfItems?: number
    * - customMap?: (item: number | string, index: number) => any
    * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
    * - showLogs?: boolean = false
    * @returns { array } Returns array of random numbers
    * @example randomNumbers( 0, 10, { numberOfItems: 9, maximumDigitsAfterPoint: 2 })  ===>  [ 5.61, 4.36, 7.28, 0.3, 7.74, 5.93, 8.23, 1.36, 8.24]
@@ -409,6 +435,7 @@ class RandomHexColorClass extends GeneratorFactory {
    * - numberOfItems?: number
    * - customMap?: (item: number | string, index: number) => any
    * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
    * - showLogs?: boolean = false
    * @returns { array } Returns array of hex colors
    * @example randomHexColors({ numberOfItems:5 })  ===>  [ "#445639", "#5a6e38", "#affd9d", "#e5d0b2", "#416276" ]
@@ -503,6 +530,7 @@ class RandomFromArrayClass extends GeneratorFactory {
    * - numberOfItems?: number
    * - customMap?: (item: number | string, index: number) => any
    * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
    * - showLogs?: boolean = false
    * @returns { array } Returns array of random elements that chosen from given array
    * @description By setting keepOrder to true it can create array without randomizing
@@ -727,6 +755,7 @@ class randomIDClass extends GeneratorFactory {
    * - numberOfItems?: number
    * - customMap?: (item: number | string, index: number) => any
    * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
    * - showLogs?: boolean = false
    * @returns { array } Returns array of random strings
    * @description Available libraries are  number, letter and symbol. To include a library put in charLib array as string.
@@ -806,6 +835,7 @@ class GradualValueClass extends GeneratorFactory {
    * - numberOfItems?: number
    * - customMap?: (item: number | string, index: number) => any
    * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
    * - showLogs?: boolean = false
    * @returns { array } Returns an array started with starting number and increased every item by incrementValue
    * @description It can be used for gradually increase a value between objects
@@ -869,6 +899,7 @@ class RandomCustomFunctionClass extends GeneratorFactory {
    * - numberOfItems?: number
    * - customMap?: (item: number | string, index: number) => any
    * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
    * - showLogs?: boolean = true
    * @returns { array }
    * @example randomCustomFunction(()=>{ return Date.now() },{ numberOfItems:3, unique: true })  ===>  [ 1686916732354, 1686916732355, 1686916732356 ]
@@ -993,6 +1024,7 @@ class RandomStringClass extends GeneratorFactory {
    * - numberOfItems?: number
    * - customMap?: (item: number | string, index: number) => any
    * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
    * - showLogs?: boolean = false
    * @returns { Array } Returns Array of strings
    * @description Available libraries are name, adjective, country and noun. To include a library put in lib array as string.
@@ -1182,6 +1214,7 @@ class RandomEmailClass extends GeneratorFactory {
    * - numberOfItems?: number
    * - customMap?: (item: number | string, index: number) => any
    * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
    * - showLogs?: boolean = false
    * @returns { Array } Returns Array of emails
    * @description  Available libraries are name, adjective, country and noun. To include a library put in firstPartLib and secondPartLib arrays as string. First part is before \@, second part is after \@ excluding tld part. 
