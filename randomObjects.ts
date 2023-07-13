@@ -22,7 +22,7 @@ interface functionArguments {
 interface baseFunctionOptions {
   numberOfItems?: number;
   unique?: boolean;
-  customMap?(item: unknown, index: number): number | string;
+  customMap?(item: unknown, index: number): unknown;
   customCompare?(item: unknown, items: unknown[], index: number): boolean;
   customLog?(
     item: unknown,
