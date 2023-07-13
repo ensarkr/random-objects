@@ -799,10 +799,10 @@ class GradualValueClass extends GeneratorFactory {
 
   protected generateItem: generateItemType = (
     { starting }: gradualValueInputs,
-    options: gradualValueOptions,
+    { incrementValue = 1 }: gradualValueOptions,
     index
   ) => {
-    const item = starting + index * options.incrementValue;
+    const item = starting + index * incrementValue;
 
     return { item };
   };
@@ -811,8 +811,7 @@ class GradualValueClass extends GeneratorFactory {
     inputs: gradualValueInputs,
     options: gradualValueOptions
   ) => {
-    if (options.incrementValue === undefined) options.incrementValue = 1;
-    else if (options.incrementValue === 0) {
+    if (options.incrementValue === 0) {
       this.showUniqueError();
       return false;
     }
