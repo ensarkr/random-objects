@@ -1,6 +1,6 @@
 {
   "name": "random-objects",
-  "version": "2.0.13",
+  "version": "2.0.14",
   "description": "Set of functions to create mock values or objects.",
   "main": "build/randomObjects.js",
   "typings": "build/typings/randomObjects.d.ts",
@@ -11,7 +11,7 @@
     "start": "node build/randomObjects.js",
     "pretest": "npm run build",
     "test": "npx eslint .",
-    "prepublish": "npm run build"
+    "prepublishOnly": "npm run build"
   },
   "repository": {
     "type": "github",
