@@ -258,6 +258,14 @@ type randomNumbersType = (
   options?: randomNumbersOptions
 ) => generateFunctionReturn | unknown[];
 
+type randomNumbersArgType = ({
+  inputs,
+  options,
+}: {
+  inputs: randomNumbersInputs;
+  options: randomNumbersOptions;
+}) => generateFunctionReturn | unknown[];
+
 class RandomNumbersClass extends GeneratorFactory {
   constructor() {
     super();
@@ -364,7 +372,7 @@ class RandomNumbersClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  public generateFromArgObject = ({
+  public generateFromArgObject: randomNumbersArgType = ({
     inputs: { starting, ending },
     options,
   }) => {
@@ -387,6 +395,12 @@ type randomHexColorType = (options?: randomHexColorOptions) => string;
 type randomHexColorsType = (
   options?: randomHexColorsOptions
 ) => generateFunctionReturn | unknown[];
+
+type randomHexColorsArgType = ({
+  options,
+}: {
+  options: randomHexColorsOptions;
+}) => generateFunctionReturn | unknown[];
 
 class RandomHexColorClass extends GeneratorFactory {
   constructor() {
@@ -440,7 +454,7 @@ class RandomHexColorClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  public generateFromArgObject = ({ options }) => {
+  public generateFromArgObject: randomHexColorsArgType = ({ options }) => {
     return this.randomHexColors(options);
   };
 }
@@ -468,6 +482,14 @@ type randomsFromArrayType = (
   arrayOfItems: unknown[],
   options?: randomsFromArrayOptions
 ) => generateFunctionReturn | unknown[];
+
+type randomsFromArrayArgType = ({
+  inputs,
+  options,
+}: {
+  inputs: randomsFromArrayInputs;
+  options: randomsFromArrayOptions;
+}) => generateFunctionReturn | unknown[];
 
 class RandomFromArrayClass extends GeneratorFactory {
   constructor() {
@@ -537,7 +559,10 @@ class RandomFromArrayClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  public generateFromArgObject = ({ inputs: { arrayOfItems }, options }) => {
+  public generateFromArgObject: randomsFromArrayArgType = ({
+    inputs: { arrayOfItems },
+    options,
+  }) => {
     return this.randomsFromArray(arrayOfItems, options);
   };
 }
@@ -564,6 +589,14 @@ type randomIDsType = (
   maxIDLength: number,
   options?: randomIDsOptions
 ) => generateFunctionReturn | unknown[];
+
+type randomIDsArgType = ({
+  inputs,
+  options,
+}: {
+  inputs: randomIDsInputs;
+  options: randomIDsOptions;
+}) => generateFunctionReturn | unknown[];
 
 class randomIDClass extends GeneratorFactory {
   constructor() {
@@ -766,7 +799,7 @@ class randomIDClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  public generateFromArgObject = ({
+  public generateFromArgObject: randomIDsArgType = ({
     inputs: { minIDLength, maxIDLength },
     options,
   }) => {
@@ -788,6 +821,14 @@ type gradualValueType = (
   starting: number,
   options?: gradualValueOptions
 ) => generateFunctionReturn | unknown[];
+
+type gradualValueArgType = ({
+  inputs,
+  options,
+}: {
+  inputs: gradualValueInputs;
+  options: gradualValueOptions;
+}) => generateFunctionReturn | unknown[];
 
 class GradualValueClass extends GeneratorFactory {
   constructor() {
@@ -839,7 +880,10 @@ class GradualValueClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  public generateFromArgObject = ({ inputs: { starting }, options }) => {
+  public generateFromArgObject: gradualValueArgType = ({
+    inputs: { starting },
+    options,
+  }) => {
     return this.gradualValue(starting, options);
   };
 }
@@ -856,6 +900,14 @@ type randomCustomFunctionType = (
   customFunction: (index: number) => unknown,
   options?: randomCustomFunctionOptions
 ) => generateFunctionReturn | unknown[];
+
+type randomCustomFunctionArgType = ({
+  inputs,
+  options,
+}: {
+  inputs: randomCustomFunctionInputs;
+  options: randomCustomFunctionOptions;
+}) => generateFunctionReturn | unknown[];
 
 class RandomCustomFunctionClass extends GeneratorFactory {
   constructor() {
@@ -907,7 +959,10 @@ class RandomCustomFunctionClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  public generateFromArgObject = ({ inputs: { customFunction }, options }) => {
+  public generateFromArgObject: randomCustomFunctionArgType = ({
+    inputs: { customFunction },
+    options,
+  }) => {
     return this.randomCustomFunction(customFunction, options);
   };
 }
@@ -939,6 +994,14 @@ type randomStringsType = (
   maxNumberOfWords: number,
   options?: randomStringsOptions
 ) => generateFunctionReturn | unknown[];
+
+type randomStringsArgType = ({
+  inputs,
+  options,
+}: {
+  inputs: randomStringsInputs;
+  options: randomStringsOptions;
+}) => generateFunctionReturn | unknown[];
 
 class RandomStringClass extends GeneratorFactory {
   constructor() {
@@ -1072,12 +1135,9 @@ class RandomStringClass extends GeneratorFactory {
     }
   };
 
-  public generateFromArgObject: generateFromArgObjectType = ({
+  public generateFromArgObject: randomStringsArgType = ({
     inputs,
     options,
-  }: {
-    inputs: randomStringsInputs;
-    options: randomStringsOptions;
   }) => {
     return this.randomStrings(
       inputs.minNumberOfWords,
@@ -1105,6 +1165,14 @@ type randomEmailType = (options?: randomEmailOptions) => string;
 type randomEmailsType = (
   options?: randomEmailsOptions
 ) => generateFunctionReturn | unknown[];
+
+type randomEmailsArgType = ({
+  inputs,
+  options,
+}: {
+  inputs: randomEmailsInputs;
+  options: randomEmailsOptions;
+}) => generateFunctionReturn | unknown[];
 
 class RandomEmailClass extends GeneratorFactory {
   constructor() {
@@ -1287,12 +1355,7 @@ class RandomEmailClass extends GeneratorFactory {
     }
   };
 
-  public generateFromArgObject: generateFromArgObjectType = ({
-    options,
-  }: {
-    inputs: randomEmailsInputs;
-    options: randomEmailsOptions;
-  }) => {
+  public generateFromArgObject: randomEmailsArgType = ({ options }) => {
     return this.randomEmails(options);
   };
 }
