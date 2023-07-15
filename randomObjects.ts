@@ -84,7 +84,7 @@ abstract class GeneratorFactory {
   protected abstract functionName: string;
   protected abstract generateItem: generateItemType;
   protected abstract uniqueErrorCheck: uniqueErrorCheckType;
-  protected abstract generateFromArgObject: generateFromArgObjectType;
+  public abstract generateFromArgObject: generateFromArgObjectType;
 
   protected generateArray: generateArrayType = (
     inputs: allMainInputTypes,
@@ -364,7 +364,7 @@ class RandomNumbersClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  protected generateFromArgObject = ({
+  public generateFromArgObject = ({
     inputs: { starting, ending },
     options,
   }) => {
@@ -440,7 +440,7 @@ class RandomHexColorClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  protected generateFromArgObject = ({ options }) => {
+  public generateFromArgObject = ({ options }) => {
     return this.randomHexColors(options);
   };
 }
@@ -537,7 +537,7 @@ class RandomFromArrayClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  protected generateFromArgObject = ({ inputs: { arrayOfItems }, options }) => {
+  public generateFromArgObject = ({ inputs: { arrayOfItems }, options }) => {
     return this.randomsFromArray(arrayOfItems, options);
   };
 }
@@ -766,7 +766,7 @@ class randomIDClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  protected generateFromArgObject = ({
+  public generateFromArgObject = ({
     inputs: { minIDLength, maxIDLength },
     options,
   }) => {
@@ -839,7 +839,7 @@ class GradualValueClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  protected generateFromArgObject = ({ inputs: { starting }, options }) => {
+  public generateFromArgObject = ({ inputs: { starting }, options }) => {
     return this.gradualValue(starting, options);
   };
 }
@@ -907,10 +907,7 @@ class RandomCustomFunctionClass extends GeneratorFactory {
     return options.numberOfItems === undefined ? dataObject : dataObject.items;
   };
 
-  protected generateFromArgObject = ({
-    inputs: { customFunction },
-    options,
-  }) => {
+  public generateFromArgObject = ({ inputs: { customFunction }, options }) => {
     return this.randomCustomFunction(customFunction, options);
   };
 }
@@ -1075,7 +1072,7 @@ class RandomStringClass extends GeneratorFactory {
     }
   };
 
-  protected generateFromArgObject: generateFromArgObjectType = ({
+  public generateFromArgObject: generateFromArgObjectType = ({
     inputs,
     options,
   }: {
@@ -1290,7 +1287,7 @@ class RandomEmailClass extends GeneratorFactory {
     }
   };
 
-  protected generateFromArgObject: generateFromArgObjectType = ({
+  public generateFromArgObject: generateFromArgObjectType = ({
     options,
   }: {
     inputs: randomEmailsInputs;
@@ -1388,29 +1385,63 @@ const randomObjects: randomObjectsType = (
   return resultArray;
 };
 
-const { randomNumber, randomNumbers } = new RandomNumbersClass();
-const { randomHexColor, randomHexColors } = new RandomHexColorClass();
-const { gradualValue } = new GradualValueClass();
-const { randomFromArray, randomsFromArray } = new RandomFromArrayClass();
-const { randomID, randomIDs } = new randomIDClass();
-const { randomCustomFunction } = new RandomCustomFunctionClass();
-const { randomString, randomStrings } = new RandomStringClass();
-const { randomEmail, randomEmails } = new RandomEmailClass();
+const {
+  randomNumber,
+  randomNumbers,
+  generateFromArgObject: randomNumbersArg,
+} = new RandomNumbersClass();
+const {
+  randomHexColor,
+  randomHexColors,
+  generateFromArgObject: randomHexColorsArg,
+} = new RandomHexColorClass();
+const { gradualValue, generateFromArgObject: gradualValueArg } =
+  new GradualValueClass();
+const {
+  randomFromArray,
+  randomsFromArray,
+  generateFromArgObject: randomsFromArrayArg,
+} = new RandomFromArrayClass();
+const {
+  randomID,
+  randomIDs,
+  generateFromArgObject: randomIDsArg,
+} = new randomIDClass();
+const { randomCustomFunction, generateFromArgObject: randomCustomFunctionArg } =
+  new RandomCustomFunctionClass();
+const {
+  randomString,
+  randomStrings,
+  generateFromArgObject: randomStringsArg,
+} = new RandomStringClass();
+const {
+  randomEmail,
+  randomEmails,
+  generateFromArgObject: randomEmailsArg,
+} = new RandomEmailClass();
 
 export = {
   randomNumber,
   randomNumbers,
+  randomNumbersArg,
   randomHexColor,
   randomHexColors,
+  randomHexColorsArg,
   gradualValue,
+  gradualValueArg,
   randomFromArray,
   randomsFromArray,
+  randomsFromArrayArg,
   randomID,
   randomIDs,
+  randomIDsArg,
   randomCustomFunction,
+  randomCustomFunctionArg,
   randomString,
   randomStrings,
+  randomStringsArg,
   randomEmail,
   randomEmails,
+  randomEmailsArg,
   randomObjects,
 };
