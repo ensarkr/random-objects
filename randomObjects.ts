@@ -1418,7 +1418,8 @@ const randomObjects: randomObjectsType = (
       const functionData: functionData = (currentData as generateFunctionReturn)
         .functionData;
       functionData.arguments.options.numberOfItems = numberOfItems;
-      functionData.arguments.options.showLogs = showLogs;
+      functionData.arguments.options.showLogs =
+        functionData.arguments.options.showLogs || showLogs;
 
       const { inputs, options } = functionData.arguments;
 
