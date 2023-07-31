@@ -24,13 +24,28 @@ interface baseFunctionOptions {
   unique?: boolean;
   customMap?(item: unknown, index: number): unknown;
   customCompare?(item: unknown, items: unknown[], index: number): boolean;
-  customLog?(
-    item: unknown,
-    index: number,
-    description: string,
-    functionName: string
-  ): void;
+  progressUpdate?: {
+    afterItemCreated?: (
+      item: unknown,
+      index: number,
+      functionName: string
+    ) => void;
+    afterMap?: (item: unknown, index: number, functionName: string) => void;
+    afterCompare?: (
+      item: unknown,
+      index: number,
+      functionName: string,
+      compareResult: boolean
+    ) => void;
+    afterUnique?: (
+      item: unknown,
+      index: number,
+      functionName: string,
+      uniqueResult: boolean
+    ) => void;
+  };
   showLogs?: boolean;
+  reCreateLimit?: number | null;
 }
 
 type allMainInputTypes =
@@ -102,6 +117,14 @@ abstract class GeneratorFactory {
     if (options.numberOfItems === undefined) {
       resultObject.items = null;
     } else {
+      if (
+        options.reCreateLimit === undefined &&
+        (options.customMap ||
+          options.customCompare ||
+          this.functionName === "randomCustomFunction")
+      ) {
+        options.reCreateLimit = 1000;
+      }
       options = resultObject.functionData.arguments.options;
 
       if (options.unique) {
@@ -109,6 +132,8 @@ abstract class GeneratorFactory {
       }
 
       const items: unknown[] = [];
+
+      const indexCounter: number[] = [0, 0];
 
       for (let index = 0; index < options.numberOfItems; index++) {
         const { item, sameProperties: newSameProperties } = this.generateItem(
@@ -118,7 +143,16 @@ abstract class GeneratorFactory {
           sameProperties
         );
         sameProperties = newSameProperties;
+
+        indexCounter[0] = index;
         index = this.logsAndCustomFunctions(item, index, items, options);
+        if (indexCounter[0] - 1 == index) {
+          indexCounter[1]++;
+        } else indexCounter[1] = 0;
+        if (options.reCreateLimit && indexCounter[1] >= options.reCreateLimit) {
+          this.showUniqueError(options.reCreateLimit);
+          options.unique = false;
+        }
       }
 
       resultObject.items = items;
@@ -127,9 +161,14 @@ abstract class GeneratorFactory {
     return resultObject;
   };
 
-  protected showUniqueError() {
+  protected showUniqueError(limit?: number) {
     console.log(
-      "!!! It is impossible to create array of unique " +
+      (typeof limit === "number"
+        ? "!!! Re-create limit is reached after " +
+          limit.toString() +
+          " try. \n"
+        : "") +
+        "!!! It is impossible to create array of unique " +
         this.functionName +
         " with given arguments. \n" +
         "!!! Proceeding to create array with non-unique items \n"
@@ -155,28 +194,37 @@ abstract class GeneratorFactory {
   ) {
     let compareResult: boolean = true;
 
-    if (options.customLog) {
-      options.customLog(item, index, "item created", this.functionName);
-    } else {
-      this.developerLog(options.showLogs, index, item, "item created");
+    if (options.progressUpdate && options.progressUpdate.afterItemCreated) {
+      options.progressUpdate.afterItemCreated(item, index, this.functionName);
     }
+    this.developerLog(options.showLogs, index, item, "item created");
 
     if (options.customMap) {
       item = options.customMap(item, index) as number | string;
     }
 
-    if (options.customLog) {
-      options.customLog(item, index, "after map function", this.functionName);
-    } else
-      this.developerLog(
-        options.showLogs && options.customMap !== undefined,
-        index,
-        item,
-        "after map function"
-      );
+    if (options.progressUpdate && options.progressUpdate.afterMap) {
+      options.progressUpdate.afterMap(item, index, this.functionName);
+    }
+
+    this.developerLog(
+      options.showLogs && options.customMap !== undefined,
+      index,
+      item,
+      "after map function"
+    );
 
     if (options.customCompare) {
       compareResult = options.customCompare(item, items, index) as boolean;
+    }
+
+    if (options.progressUpdate && options.progressUpdate.afterCompare) {
+      options.progressUpdate.afterCompare(
+        item,
+        index,
+        this.functionName,
+        compareResult
+      );
     }
 
     if (options.unique) {
@@ -185,28 +233,25 @@ abstract class GeneratorFactory {
       }
     }
 
-    if (options.customLog) {
-      options.customLog(
+    if (options.progressUpdate && options.progressUpdate.afterUnique) {
+      options.progressUpdate.afterUnique(
         item,
         index,
-        "after compare function, " +
-          (compareResult
-            ? "no problem occurred"
-            : "this item cannot be used trying again"),
-        this.functionName
-      );
-    } else {
-      this.developerLog(
-        options.showLogs &&
-          (options.customCompare !== undefined || options.unique),
-        index,
-        item,
-        "after compare function, " +
-          (compareResult
-            ? "no problem occurred"
-            : "this item cannot be used trying again")
+        this.functionName,
+        compareResult
       );
     }
+
+    this.developerLog(
+      options.showLogs &&
+        (options.customCompare !== undefined || options.unique),
+      index,
+      item,
+      "after compare function, " +
+        (compareResult
+          ? "no problem occurred"
+          : "this item cannot be used trying again")
+    );
 
     if (compareResult) {
       items[index] = item;
