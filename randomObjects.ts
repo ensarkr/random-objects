@@ -25,6 +25,7 @@ interface baseFunctionOptions {
   customMap?(item: unknown, index: number): unknown;
   customCompare?(item: unknown, items: unknown[], index: number): boolean;
   progressUpdate?: {
+    uniqueCheckFailed?: (functionName: string, limit?: number | null) => void;
     afterItemCreated?: (
       item: unknown,
       index: number,
@@ -150,7 +151,7 @@ abstract class GeneratorFactory {
           indexCounter[1]++;
         } else indexCounter[1] = 0;
         if (options.reCreateLimit && indexCounter[1] >= options.reCreateLimit) {
-          this.showUniqueError(options.reCreateLimit);
+          this.showUniqueError(options, options.reCreateLimit);
           options.unique = false;
         }
       }
@@ -161,7 +162,11 @@ abstract class GeneratorFactory {
     return resultObject;
   };
 
-  protected showUniqueError(limit?: number) {
+  protected showUniqueError(options: allMainOptionTypes, limit?: number) {
+    if (options.progressUpdate && options.progressUpdate.uniqueCheckFailed) {
+      options.progressUpdate.uniqueCheckFailed(this.functionName, limit);
+    }
+
     console.log(
       (typeof limit === "number"
         ? "!!! Re-create limit is reached after " +
@@ -337,7 +342,7 @@ class RandomNumbersClass extends GeneratorFactory {
     maximumNumberOfItems = maximumNumberOfItems == 0 ? 1 : maximumNumberOfItems;
 
     if (maximumNumberOfItems < options.numberOfItems) {
-      this.showUniqueError();
+      this.showUniqueError(options);
       return false;
     }
 
@@ -458,7 +463,7 @@ class RandomHexColorClass extends GeneratorFactory {
 
   protected uniqueErrorCheck: uniqueErrorCheckType = (inputs, options) => {
     if (options.numberOfItems > 16777215) {
-      this.showUniqueError();
+      this.showUniqueError(options);
       return false;
     }
     return true;
@@ -554,7 +559,7 @@ class RandomFromArrayClass extends GeneratorFactory {
     const maximumNumberOfItems = arrayOfItems.length;
 
     if (maximumNumberOfItems < options.numberOfItems) {
-      this.showUniqueError();
+      this.showUniqueError(options);
       return false;
     }
 
@@ -797,7 +802,7 @@ class randomIDClass extends GeneratorFactory {
 
     if (options.numberOfItems <= maxUniquePossibility) return true;
     else {
-      this.showUniqueError();
+      this.showUniqueError(options);
       return false;
     }
   };
@@ -898,7 +903,7 @@ class GradualValueClass extends GeneratorFactory {
     options: gradualValueOptions
   ) => {
     if (options.incrementValue === 0) {
-      this.showUniqueError();
+      this.showUniqueError(options);
       return false;
     }
 
@@ -1175,7 +1180,7 @@ class RandomStringClass extends GeneratorFactory {
     }
     if (options.numberOfItems <= maxUniquePossibility) return true;
     else {
-      this.showUniqueError();
+      this.showUniqueError(options);
       return false;
     }
   };
@@ -1327,7 +1332,9 @@ class RandomEmailClass extends GeneratorFactory {
 
   protected uniqueErrorCheck: uniqueErrorCheckType = (
     inputs: randomEmailsInputs,
-    {
+    options: randomEmailsOptions = {}
+  ) => {
+    const {
       firstPartLib = ["name"],
       secondPartLib = ["noun"],
       firstPartMaxWords = 3,
@@ -1335,8 +1342,8 @@ class RandomEmailClass extends GeneratorFactory {
       secondPartMaxWords = 2,
       secondPartMinWords = 1,
       numberOfItems,
-    }: randomEmailsOptions = {}
-  ) => {
+    } = options;
+
     let firstPartMaxArrLength: number = 0;
 
     firstPartLib.forEach((element) => {
@@ -1395,7 +1402,7 @@ class RandomEmailClass extends GeneratorFactory {
 
     if (numberOfItems <= maxUniquePossibility) return true;
     else {
-      this.showUniqueError();
+      this.showUniqueError(options);
       return false;
     }
   };
