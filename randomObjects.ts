@@ -153,6 +153,7 @@ abstract class GeneratorFactory {
         if (options.reCreateLimit && indexCounter[1] >= options.reCreateLimit) {
           this.showUniqueError(options, options.reCreateLimit);
           options.unique = false;
+          options.customCompare = undefined;
         }
       }
 
@@ -176,7 +177,9 @@ abstract class GeneratorFactory {
         "!!! It is impossible to create array of unique " +
         this.functionName +
         " with given arguments. \n" +
-        "!!! Proceeding to create array with non-unique items \n"
+        "!!! Proceeding to create array of non-unique items" +
+        (typeof limit === "number" ? " without using customCompare" : "") +
+        ".\n"
     );
   }
 
