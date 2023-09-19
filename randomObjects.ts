@@ -2,7 +2,6 @@ import { listOfNames } from "./sources/listOfNames.js";
 import { listOfAdjectives } from "./sources/listOfAdjectives.js";
 import { listOfCountries } from "./sources/listOfCountries.js";
 import { listOfNouns } from "./sources/listOfNouns.js";
-import { listOfTLDs } from "./sources/listOfTLDs.js";
 
 interface generateFunctionReturn {
   items: unknown[] | null;
@@ -52,22 +51,18 @@ interface baseFunctionOptions {
 type allMainInputTypes =
   | gradualValueInputs
   | randomNumbersInputs
-  | randomHexColorsInputs
   | randomsFromArrayInputs
   | randomIDsInputs
   | randomCustomFunctionInputs
-  | randomStringsInputs
-  | randomEmailsOptions;
+  | randomStringsInputs;
 
 type allMainOptionTypes =
   | gradualValueOptions
   | randomNumbersOptions
-  | randomHexColorsOptions
   | randomsFromArrayOptions
   | randomIDsOptions
   | randomCustomFunctionOptions
-  | randomStringsOptions
-  | randomEmailsOptions;
+  | randomStringsOptions;
 
 type generateItemType = (
   inputs: allMainInputTypes,
@@ -430,85 +425,6 @@ class RandomNumbersClass extends GeneratorFactory {
     options,
   }) => {
     return this.randomNumbers(starting, ending, options);
-  };
-}
-
-// * Random Hex Color
-
-interface randomHexColorsOptions
-  extends baseFunctionOptions,
-    randomHexColorOptions {}
-
-interface randomHexColorOptions {}
-
-interface randomHexColorsInputs {}
-
-type randomHexColorType = (options?: randomHexColorOptions) => string;
-
-type randomHexColorsType = (
-  options?: randomHexColorsOptions
-) => generateFunctionReturn | unknown[];
-
-type randomHexColorsArgType = ({
-  options,
-}: {
-  options: randomHexColorsOptions;
-}) => generateFunctionReturn | unknown[];
-
-class RandomHexColorClass extends GeneratorFactory {
-  constructor() {
-    super();
-    this.functionName = "randomHexColor";
-  }
-
-  protected randomNumberClass: RandomNumbersClass;
-  protected functionName: string;
-
-  protected uniqueErrorCheck: uniqueErrorCheckType = (inputs, options) => {
-    if (options.numberOfItems > 16777215) {
-      this.showUniqueError(options);
-      return false;
-    }
-    return true;
-  };
-
-  protected generateItem: generateItemType = () => {
-    const item =
-      "#" +
-      Math.floor(Math.random() * 16777216)
-        .toString(16)
-        .padStart(6, "0");
-
-    return { item };
-  };
-
-  /**
-   * @returns { string } Returns a hex color
-   * @example randomHexColor()  ===>   "#445639"]
-   */
-  randomHexColor: randomHexColorType = () => {
-    return this.generateItem({}, {}, 0).item as string;
-  };
-
-  /**
-   * @param { object } options - properties of options object
-   * - unique?: boolean = false
-   * - numberOfItems?: number
-   * - customMap?: (item: number | string, index: number) => any
-   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
-   * - showLogs?: boolean = false
-   * @returns { array } Returns array of hex colors
-   * @example randomHexColors({ numberOfItems:5 })  ===>  [ "#445639", "#5a6e38", "#affd9d", "#e5d0b2", "#416276" ]
-   */
-  randomHexColors: randomHexColorsType = (options = {}) => {
-    const dataObject = this.generateArray({}, options);
-
-    return options.numberOfItems === undefined ? dataObject : dataObject.items;
-  };
-
-  public generateFromArgObject: randomHexColorsArgType = ({ options }) => {
-    return this.randomHexColors(options);
   };
 }
 
@@ -1200,221 +1116,6 @@ class RandomStringClass extends GeneratorFactory {
   };
 }
 
-interface randomEmailsOptions extends baseFunctionOptions, randomEmailOptions {}
-
-interface randomEmailOptions {
-  firstPartLib?: string[];
-  secondPartLib?: string[];
-  firstPartMinWords?: number;
-  firstPartMaxWords?: number;
-  secondPartMinWords?: number;
-  secondPartMaxWords?: number;
-}
-
-interface randomEmailsInputs {}
-
-type randomEmailType = (options?: randomEmailOptions) => string;
-
-type randomEmailsType = (
-  options?: randomEmailsOptions
-) => generateFunctionReturn | unknown[];
-
-type randomEmailsArgType = ({
-  inputs,
-  options,
-}: {
-  inputs: randomEmailsInputs;
-  options: randomEmailsOptions;
-}) => generateFunctionReturn | unknown[];
-
-class RandomEmailClass extends GeneratorFactory {
-  constructor() {
-    super();
-    this.functionName = "randomEmail";
-  }
-
-  protected functionName: string;
-
-  protected stringLib = {
-    name: listOfNames,
-    adjective: listOfAdjectives,
-    country: listOfCountries.map((e) => e.replaceAll(" ", "")),
-    noun: listOfNouns,
-  };
-
-  protected tld = listOfTLDs;
-
-  protected generateItem: generateItemType = (
-    inputs: randomEmailsInputs,
-    {
-      firstPartLib = ["name"],
-      secondPartLib = ["noun"],
-      firstPartMaxWords = 3,
-      firstPartMinWords = 1,
-      secondPartMaxWords = 2,
-      secondPartMinWords = 1,
-    }: randomEmailsOptions
-  ) => {
-    let item: string = "";
-    const firstPartWordCount = Math.floor(
-      Math.random() * (firstPartMaxWords - firstPartMinWords + 1) +
-        firstPartMinWords
-    );
-    const secondPartWordCount = Math.floor(
-      Math.random() * (secondPartMaxWords - secondPartMinWords + 1) +
-        secondPartMinWords
-    );
-
-    for (let i = 0; i < firstPartWordCount; i++) {
-      const randomLib =
-        this.stringLib[
-          firstPartLib[Math.floor(Math.random() * firstPartLib.length)]
-        ];
-
-      item += randomLib[Math.floor(Math.random() * randomLib.length)];
-    }
-
-    item += "@";
-
-    for (let i = 0; i < secondPartWordCount; i++) {
-      const randomLib =
-        this.stringLib[
-          secondPartLib[Math.floor(Math.random() * secondPartLib.length)]
-        ];
-
-      item += randomLib[Math.floor(Math.random() * randomLib.length)];
-    }
-
-    item += ".";
-
-    item += this.tld[Math.floor(Math.random() * listOfTLDs.length)];
-
-    return { item };
-  };
-
-  /**
-   * @param { object } options - properties of options object
-   * - firstPartLib?: string[] = ["name"]
-   * - secondPartLib?: string[] = ["noun"]
-   * - firstPartMinWords?: number = 1
-   * - firstPartMaxWords?: number = 3
-   * - secondPartMinWords?: number = 1
-   * - secondPartMaxWords?: number = 2
-   * @returns { string } Returns email
-   * @description  Available libraries are name, adjective, country and noun. To include a library put in firstPartLib and secondPartLib arrays as string. First part is before \@, second part is after \@ excluding tld part.
-   * @example randomEmail()  ===>  "RoswellNoelia@university.dk"
-   */
-  randomEmail: randomEmailType = (options = {}) => {
-    return this.generateItem({}, options, 0).item as string;
-  };
-
-  /**
-   * @param { object } options - properties of options object
-   * - firstPartLib?: string[] = ["name"]
-   * - secondPartLib?: string[] = ["noun"]
-   * - firstPartMinWords?: number = 1
-   * - firstPartMaxWords?: number = 3
-   * - secondPartMinWords?: number = 1
-   * - secondPartMaxWords?: number = 2
-   * - unique?: boolean = false
-   * - numberOfItems?: number
-   * - customMap?: (item: number | string, index: number) => any
-   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
-   * - showLogs?: boolean = false
-   * @returns { Array } Returns Array of emails
-   * @description  Available libraries are name, adjective, country and noun. To include a library put in firstPartLib and secondPartLib arrays as string. First part is before \@, second part is after \@ excluding tld part. 
-   * @example   randomEmails({ firstPartMinWords: 1, firstPartMaxWords: 1, secondPartMinWords: 1, secondPartMaxWords: 1, numberOfItems: 2,
-  })  ===>  [ "Baldwin@arrival.ch", "Mafalda@expression.se" ]
-   */
-  randomEmails: randomEmailsType = (options = {}) => {
-    const dataObject = this.generateArray({}, options);
-
-    return options.numberOfItems === undefined ? dataObject : dataObject.items;
-  };
-
-  protected uniqueErrorCheck: uniqueErrorCheckType = (
-    inputs: randomEmailsInputs,
-    options: randomEmailsOptions = {}
-  ) => {
-    const {
-      firstPartLib = ["name"],
-      secondPartLib = ["noun"],
-      firstPartMaxWords = 3,
-      firstPartMinWords = 1,
-      secondPartMaxWords = 2,
-      secondPartMinWords = 1,
-      numberOfItems,
-    } = options;
-
-    let firstPartMaxArrLength: number = 0;
-
-    firstPartLib.forEach((element) => {
-      switch (element) {
-        case "name":
-          firstPartMaxArrLength += 6779;
-          break;
-        case "adjective":
-          firstPartMaxArrLength += 1314;
-          break;
-        case "country":
-          firstPartMaxArrLength += 193;
-          break;
-        case "noun":
-          firstPartMaxArrLength += 1000;
-          break;
-        default:
-          break;
-      }
-    });
-
-    let secondPartMaxArrLength: number = 0;
-
-    secondPartLib.forEach((element) => {
-      switch (element) {
-        case "name":
-          secondPartMaxArrLength += 6779;
-          break;
-        case "adjective":
-          secondPartMaxArrLength += 1314;
-          break;
-        case "country":
-          secondPartMaxArrLength += 193;
-          break;
-        case "noun":
-          secondPartMaxArrLength += 1000;
-          break;
-        default:
-          break;
-      }
-    });
-
-    let firstPartMaxUniquePossibility: number = 0;
-    let secondPartMaxUniquePossibility: number = 0;
-
-    for (let i = firstPartMinWords; i < firstPartMaxWords + 1; i++) {
-      firstPartMaxUniquePossibility += Math.pow(firstPartMaxArrLength, i);
-    }
-
-    for (let i = secondPartMinWords; i < secondPartMaxWords + 1; i++) {
-      secondPartMaxUniquePossibility += Math.pow(secondPartMaxArrLength, i);
-    }
-
-    const maxUniquePossibility =
-      firstPartMaxUniquePossibility * secondPartMaxUniquePossibility * 30;
-
-    if (numberOfItems <= maxUniquePossibility) return true;
-    else {
-      this.showUniqueError(options);
-      return false;
-    }
-  };
-
-  public generateFromArgObject: randomEmailsArgType = ({ options }) => {
-    return this.randomEmails(options);
-  };
-}
-
 interface blueprint {
   [key: string]: generateFunctionReturn | unknown;
 }
@@ -1509,11 +1210,6 @@ const {
   randomNumbers,
   generateFromArgObject: randomNumbersArg,
 } = new RandomNumbersClass();
-const {
-  randomHexColor,
-  randomHexColors,
-  generateFromArgObject: randomHexColorsArg,
-} = new RandomHexColorClass();
 const { gradualValue, generateFromArgObject: gradualValueArg } =
   new GradualValueClass();
 const {
@@ -1533,19 +1229,11 @@ const {
   randomStrings,
   generateFromArgObject: randomStringsArg,
 } = new RandomStringClass();
-const {
-  randomEmail,
-  randomEmails,
-  generateFromArgObject: randomEmailsArg,
-} = new RandomEmailClass();
 
 export = {
   randomNumber,
   randomNumbers,
   randomNumbersArg,
-  randomHexColor,
-  randomHexColors,
-  randomHexColorsArg,
   gradualValue,
   gradualValueArg,
   randomFromArray,
@@ -1559,8 +1247,5 @@ export = {
   randomString,
   randomStrings,
   randomStringsArg,
-  randomEmail,
-  randomEmails,
-  randomEmailsArg,
   randomObjects,
 };
