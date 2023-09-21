@@ -1125,7 +1125,7 @@ type randomObjectsType = (
   numberOfItems: number,
   optionsOverall?: {
     showLogs?: boolean;
-    progressUpdate: (index: number) => void;
+    progressUpdate?: (index: number) => void;
   }
 ) => object[];
 
