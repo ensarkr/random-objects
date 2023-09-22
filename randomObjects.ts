@@ -1159,7 +1159,7 @@ type randomObjectsType = (
 const randomObjects: randomObjectsType = (
   blueprint,
   numberOfItems,
-  optionsOverall
+  { showLogs = false, progressUpdate } = {}
 ) => {
   const keys: string[] = Object.keys(blueprint);
 
@@ -1178,7 +1178,7 @@ const randomObjects: randomObjectsType = (
         .functionData;
       functionData.arguments.options.numberOfItems = numberOfItems;
       functionData.arguments.options.showLogs =
-        functionData.arguments.options.showLogs || optionsOverall.showLogs;
+        functionData.arguments.options.showLogs || showLogs;
 
       const { inputs, options } = functionData.arguments;
 
@@ -1189,7 +1189,7 @@ const randomObjects: randomObjectsType = (
 
       openedBlueprint[keys[i]] = { data: res, single: false };
 
-      if (optionsOverall.progressUpdate) optionsOverall.progressUpdate(i);
+      if (progressUpdate) progressUpdate(i);
     }
   }
 
