@@ -54,7 +54,8 @@ type allMainInputTypes =
   | randomsFromArrayInputs
   | randomIDsInputs
   | randomCustomFunctionInputs
-  | randomStringsInputs;
+  | randomStringsInputs
+  | randomArraysInputs;
 
 type allMainOptionTypes =
   | gradualValueOptions
@@ -62,7 +63,8 @@ type allMainOptionTypes =
   | randomsFromArrayOptions
   | randomIDsOptions
   | randomCustomFunctionOptions
-  | randomStringsOptions;
+  | randomStringsOptions
+  | randomArraysOptions;
 
 type generateItemType = (
   inputs: allMainInputTypes,
@@ -1116,6 +1118,166 @@ class RandomStringClass extends GeneratorFactory {
   };
 }
 
+// * Random Array
+
+interface randomArraysOptions extends baseFunctionOptions, randomArrayOptions {}
+
+interface randomArrayOptions {
+  minLengthOfArray?: number;
+  maxLengthOfArray?: number;
+  keepOrder?: boolean;
+  allowDuplicates?: boolean;
+}
+
+interface randomArraysInputs {
+  arrayOfItems: unknown[];
+}
+
+type randomArrayType = (
+  arrayOfItems: unknown[],
+  options?: randomArrayOptions
+) => unknown[];
+
+type randomArraysType = (
+  arrayOfItems: unknown[],
+  options?: randomArraysOptions
+) => generateFunctionReturn | unknown[][];
+
+type randomArraysArgType = ({
+  inputs,
+  options,
+}: {
+  inputs: randomArraysInputs;
+  options: randomsFromArrayOptions;
+}) => generateFunctionReturn | unknown[];
+
+class RandomArrayClass extends GeneratorFactory {
+  constructor() {
+    super();
+    this.functionName = "randomArray";
+  }
+
+  protected functionName: string;
+
+  protected uniqueErrorCheck = (
+    inputs: randomArraysInputs,
+    options: randomArraysOptions
+  ) => {
+    // TODO: add proper one
+
+    if (
+      options.allowDuplicates === false ||
+      options.allowDuplicates === undefined
+    ) {
+      const uniqueItemsCount = [...new Set(inputs.arrayOfItems)].length;
+
+      if (
+        options.maxLengthOfArray > uniqueItemsCount ||
+        options.minLengthOfArray > uniqueItemsCount
+      ) {
+        options.allowDuplicates = true;
+      }
+    }
+    return options.unique;
+  };
+
+  protected generateItem: generateItemType = (
+    { arrayOfItems }: randomArraysInputs,
+    options: randomArraysOptions
+  ) => {
+    const min = options.minLengthOfArray ? options.minLengthOfArray : 0;
+    const max = options.maxLengthOfArray
+      ? options.maxLengthOfArray
+      : min < arrayOfItems.length
+      ? arrayOfItems.length
+      : min;
+
+    const resultLength = Math.floor(Math.random() * (max - min + 1) + min);
+
+    const uniqueItems = [...new Set(arrayOfItems)];
+
+    if (
+      options.allowDuplicates === false ||
+      options.allowDuplicates === undefined
+    )
+      if (
+        options.maxLengthOfArray > uniqueItems.length ||
+        options.minLengthOfArray > uniqueItems.length
+      ) {
+        options.allowDuplicates = true;
+      }
+
+    const itemArray: unknown[] = [];
+
+    for (let i = 0; i < resultLength; i++) {
+      if (options.allowDuplicates) {
+        itemArray.push(
+          uniqueItems[Math.floor(Math.random() * arrayOfItems.length)]
+        );
+      } else {
+        const item =
+          uniqueItems[Math.floor(Math.random() * arrayOfItems.length)];
+
+        if (!itemArray.includes(item)) itemArray.push(item);
+        else {
+          i--;
+          continue;
+        }
+      }
+    }
+
+    if (options.keepOrder === undefined || options.keepOrder) {
+      itemArray.sort((a, b) => {
+        if (options.allowDuplicates === true && a === b) return 0;
+
+        return uniqueItems.indexOf(a) - uniqueItems.indexOf(b);
+      });
+    }
+
+    return { item: itemArray };
+  };
+
+  /**
+   * @param { array } arrayOfItems - Array of different elements
+   * @returns { array } Returns an array of element that randomly chosen from given array
+   * @example randomArray([ 9, 8, 4, {test:99})  ===>  [ 9, 8 ]
+   */
+  public randomArray: randomArrayType = (arrayOfItems) => {
+    return this.generateItem({ arrayOfItems }, {}, 0).item as unknown[];
+  };
+
+  /**
+   * @param { array } arrayOfItems - Array of different elements
+   * @param { object } options - properties of options object
+   * - keepOrder?: boolean = true
+   * - allowDuplicates: boolean = false
+   * - minLengthOfArray?: number = 0
+   * - maxLengthOfArray: number = maximum length
+   * - unique?: boolean = false
+   * - numberOfItems?: number
+   * - customMap?: (item: number | string, index: number) => any
+   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
+   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
+   * - showLogs?: boolean = false
+   * @returns { array } Returns array of random arrays that contains elements from given array
+   * @example randomArrays([ 9, 8, 4, {test:99}, [45]], { numberOfItems:2, unique:true })  ===>  [ [ 9, 8, 4, { test: 99 }, [ 45 ] ], [ [ 45 ] ] ]
+   */
+  public randomArrays: randomArraysType = (arrayOfItems, options = {}) => {
+    const dataObject = this.generateArray({ arrayOfItems }, options);
+
+    return options.numberOfItems === undefined
+      ? dataObject
+      : (dataObject.items as unknown[][]);
+  };
+
+  public generateFromArgObject: randomArraysArgType = ({
+    inputs: { arrayOfItems },
+    options,
+  }) => {
+    return this.randomArrays(arrayOfItems, options);
+  };
+}
+
 interface blueprint {
   [key: string]: generateFunctionReturn | unknown;
 }
@@ -1234,6 +1396,11 @@ const {
   randomStrings,
   generateFromArgObject: randomStringsArg,
 } = new RandomStringClass();
+const {
+  randomArray,
+  randomArrays,
+  generateFromArgObject: randomArraysArg,
+} = new RandomArrayClass();
 
 export = {
   randomNumber,
@@ -1252,5 +1419,8 @@ export = {
   randomString,
   randomStrings,
   randomStringsArg,
+  randomArray,
+  randomArrays,
+  randomArraysArg,
   randomObjects,
 };
