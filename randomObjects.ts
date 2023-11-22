@@ -1,7 +1,7 @@
-import { listOfNames } from "./sources/listOfNames.js";
-import { listOfAdjectives } from "./sources/listOfAdjectives.js";
-import { listOfCountries } from "./sources/listOfCountries.js";
-import { listOfNouns } from "./sources/listOfNouns.js";
+import { listOfNames } from "./sources/listOfNames";
+import { listOfAdjectives } from "./sources/listOfAdjectives";
+import { listOfCountries } from "./sources/listOfCountries";
+import { listOfNouns } from "./sources/listOfNouns";
 
 interface generateFunctionReturn {
   items: unknown[] | null;
@@ -1402,7 +1402,7 @@ const {
   generateFromArgObject: randomArraysArg,
 } = new RandomArrayClass();
 
-export = {
+export {
   randomNumber,
   randomNumbers,
   randomNumbersArg,

@@ -5,6 +5,9 @@
     "module": "CommonJS",
     "outDir": "./build",
     "declaration": true,
-    "declarationDir": "./build/typings"
-  }
+    "declarationDir": "./build/typings",
+    "skipLibCheck": true,
+    "moduleResolution": "Node"
+  },
+  "include": ["./randomObjects.ts"]
 }
