@@ -11,22 +11,39 @@ $ npm install random-objects
 
 ## Simple usage
 
-Before using I highly recommend to check the documentation.
-
 ```javascript
 import {
   randomNumbers,
-  randomStrings,
-  randomIDs,
+  randomNumbersBlueprint,
+  randomStringsBlueprint,
+  randomIDsBlueprint,
   randomObjects,
 } from "random-objects";
 
-randomNumbers(1, 100, { unique: true, numberOfItems: 5, onlyIntegers: true });
-//   [5, 78, 98, 55, 12]
+randomNumbers({
+  starting: 0,
+  ending: 100,
+  unique: true,
+  numberOfItems: 5,
+  onlyIntegers: true,
+});
+
+// [ 47, 80, 69, 70, 40 ]
 
 const blueprint = {
-  name: randomStrings(2, 4, { lib: ["name"], separator: " " }),
-  number: randomIDs(10, 10, {
+  name: randomStringsBlueprint({
+    minNumberOfWords: 2,
+    maxNumberOfWords: 4,
+    lib: ["name"],
+    separator: " ",
+  }),
+  age: randomNumbersBlueprint({
+    starting: 18,
+    ending: 99,
+  }),
+  phoneNumber: randomIDsBlueprint({
+    minIDLength: 10,
+    maxIDLength: 10,
     unique: true,
     charLib: ["number"],
     customMap: (e, i) => "+90" + e,
@@ -34,28 +51,29 @@ const blueprint = {
 };
 
 randomObjects(blueprint, 3);
+
 /*
 [
   {
-    name: 'Chloe Efrain Kierra',
-    number: '+902047499537'
+    name: 'Rennie Eveline Braylon',
+    age: 44,
+    phoneNumber: '+907877401684'
   },
   {
-    name: 'Desi Chantel Lesli Avery',
-    number: '+903494952654'
+    name: 'Chanie Tyson Bobbi',
+    age: 54,
+    phoneNumber: '+901441685782'
   },
   {
-    name: 'Arlyn Lilly Keyla',
-    number: '+905784496945'
+    name: 'Edie Leilani Wilbur',
+    age: 79,
+    phoneNumber: '+901625566734'
   }
 ]
 */
 ```
 
-## Docs
-
-You can check [this markdown file.](https://github.com/ensarkr/random-objects/blob/main/DOCS.md)
-
 ## Technologies
 
 - Typescript
+- ts-jest

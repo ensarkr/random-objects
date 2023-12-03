@@ -3,164 +3,142 @@ import { listOfAdjectives } from "./sources/listOfAdjectives";
 import { listOfCountries } from "./sources/listOfCountries";
 import { listOfNouns } from "./sources/listOfNouns";
 
-interface generateFunctionReturn {
-  items: unknown[] | null;
-  functionData: functionData;
-}
+type baseBlueprintOptions<POPULATED extends boolean> = POPULATED extends true
+  ? {
+      unique: boolean;
+      progressUpdate: progressUpdate;
+      showLogs: boolean;
+      reCreateLimit: number | null;
+      customMap?(item: unknown, index: number): unknown;
+      customCompare?(item: unknown, items: unknown[], index: number): boolean;
+    }
+  : {
+      unique?: boolean;
+      progressUpdate?: progressUpdate;
+      showLogs?: boolean;
+      reCreateLimit?: number | null;
+      customMap?(item: unknown, index: number): unknown;
+      customCompare?(item: unknown, items: unknown[], index: number): boolean;
+    };
 
-interface functionData {
-  arguments: functionArguments;
-  functionCall: generateFromArgObjectType;
-}
+type baseGeneratorOptions<POPULATED extends boolean> = POPULATED extends true
+  ? {
+      numberOfItems: number;
+      unique: boolean;
+      progressUpdate: progressUpdate;
+      showLogs: boolean;
+      reCreateLimit: number | null;
+      customMap?(item: unknown, index: number): unknown;
+      customCompare?(item: unknown, items: unknown[], index: number): boolean;
+    }
+  : {
+      numberOfItems?: number;
+      unique?: boolean;
+      progressUpdate?: progressUpdate;
+      showLogs?: boolean;
+      reCreateLimit?: number | null;
+      customMap?(item: unknown, index: number): unknown;
+      customCompare?(item: unknown, items: unknown[], index: number): boolean;
+    };
 
-interface functionArguments {
-  inputs?: allMainInputTypes;
-  options?: baseFunctionOptions & allMainOptionTypes;
-}
+type progressUpdate = {
+  uniqueCheckFailed?: (functionName: string, limit?: number | null) => void;
+  afterItemCreated?: (
+    item: unknown,
+    index: number,
+    functionName: string
+  ) => void;
+  afterMap?: (item: unknown, index: number, functionName: string) => void;
+  afterCompare?: (
+    item: unknown,
+    index: number,
+    functionName: string,
+    compareResult: boolean
+  ) => void;
+  afterUnique?: (
+    item: unknown,
+    index: number,
+    functionName: string,
+    uniqueResult: boolean
+  ) => void;
+};
 
-interface baseFunctionOptions {
-  numberOfItems?: number;
-  unique?: boolean;
-  customMap?(item: unknown, index: number): unknown;
-  customCompare?(item: unknown, items: unknown[], index: number): boolean;
-  progressUpdate?: {
-    uniqueCheckFailed?: (functionName: string, limit?: number | null) => void;
-    afterItemCreated?: (
-      item: unknown,
-      index: number,
-      functionName: string
-    ) => void;
-    afterMap?: (item: unknown, index: number, functionName: string) => void;
-    afterCompare?: (
-      item: unknown,
-      index: number,
-      functionName: string,
-      compareResult: boolean
-    ) => void;
-    afterUnique?: (
-      item: unknown,
-      index: number,
-      functionName: string,
-      uniqueResult: boolean
-    ) => void;
-  };
-  showLogs?: boolean;
-  reCreateLimit?: number | null;
-}
+type functionData = {
+  functionOptions: allBlueprintOptionTypes<true>;
+  functionCall: generateArrayType;
+};
 
-type allMainInputTypes =
-  | gradualValueInputs
-  | randomNumbersInputs
-  | randomsFromArrayInputs
-  | randomIDsInputs
-  | randomCustomFunctionInputs
-  | randomStringsInputs
-  | randomArraysInputs;
+type allOptionTypes<POPULATED extends boolean> =
+  | gradualValueOptions<POPULATED>
+  | randomNumbersOptions<POPULATED>
+  | randomFromArrayOptions<POPULATED>
+  | randomCustomFunctionOptions<POPULATED>
+  | randomStringsOptions<POPULATED>
+  | randomArrayOptions<POPULATED>
+  | randomIDsOptions<POPULATED>;
 
-type allMainOptionTypes =
-  | gradualValueOptions
-  | randomNumbersOptions
-  | randomsFromArrayOptions
-  | randomIDsOptions
-  | randomCustomFunctionOptions
-  | randomStringsOptions
-  | randomArraysOptions;
+type allBlueprintOptionTypes<POPULATED extends boolean> =
+  | gradualValueBlueprintOptions<POPULATED>
+  | randomNumbersBlueprintOptions<POPULATED>
+  | randomFromArrayBlueprintOptions<POPULATED>
+  | randomCustomFunctionBlueprintOptions<POPULATED>
+  | randomIDsBlueprintOptions<POPULATED>
+  | randomArrayBlueprintOptions<POPULATED>
+  | randomStringsBlueprintOptions<POPULATED>;
 
 type generateItemType = (
-  inputs: allMainInputTypes,
-  options: allMainOptionTypes,
-  index: number,
-  sameProperties?: object
-) => { item: unknown; sameProperties?: object };
+  options: allOptionTypes<true>,
+  index: number
+) => unknown;
 
-type uniqueErrorCheckType = (
-  inputs: allMainInputTypes,
-  options: allMainOptionTypes
-) => boolean | undefined;
+type uniqueErrorCheckType = (options: allOptionTypes<true>) => boolean;
 
-type generateArrayType = (
-  inputs: allMainInputTypes,
-  options: allMainOptionTypes
-) => generateFunctionReturn;
+type generateArrayType = (options: allOptionTypes<true>) => unknown[];
 
-type generateFromArgObjectType = ({
-  inputs,
-  options,
-}: {
-  inputs: allMainInputTypes;
-  options: allMainOptionTypes;
-}) => unknown[] | generateFunctionReturn;
-
-abstract class GeneratorFactory {
+abstract class RandomGeneratorFactory {
   constructor() {}
 
   protected abstract functionName: string;
   protected abstract generateItem: generateItemType;
   protected abstract uniqueErrorCheck: uniqueErrorCheckType;
-  public abstract generateFromArgObject: generateFromArgObjectType;
 
-  protected generateArray: generateArrayType = (
-    inputs: allMainInputTypes,
-    options: allMainOptionTypes
-  ) => {
-    const resultObject: generateFunctionReturn = this.returnObjectWithArguments(
-      {
-        inputs,
-        options,
-      }
-    );
+  protected generateArray: generateArrayType = (options) => {
+    if (options.unique) {
+      options.unique = this.uniqueErrorCheck(options);
+    }
 
-    let sameProperties: object;
+    const items: unknown[] = [];
 
-    if (options.numberOfItems === undefined) {
-      resultObject.items = null;
-    } else {
+    let indexCounter: number = 0;
+    let recreateCount: number = 0;
+
+    for (let index = 0; index < options.numberOfItems; index++) {
+      const item = this.generateItem(options, index);
+
       if (
-        options.reCreateLimit === undefined &&
-        (options.customMap ||
-          options.customCompare ||
-          this.functionName === "randomCustomFunction")
+        !this.logsAndCustomFunctions(item, index, items, options) &&
+        indexCounter === index
       ) {
-        options.reCreateLimit = 1000;
-      }
-      options = resultObject.functionData.arguments.options;
-
-      if (options.unique) {
-        options.unique = this.uniqueErrorCheck(inputs, options);
-      }
-
-      const items: unknown[] = [];
-
-      const indexCounter: number[] = [0, 0];
-
-      for (let index = 0; index < options.numberOfItems; index++) {
-        const { item, sameProperties: newSameProperties } = this.generateItem(
-          inputs,
-          options,
-          index,
-          sameProperties
-        );
-        sameProperties = newSameProperties;
-
-        indexCounter[0] = index;
-        index = this.logsAndCustomFunctions(item, index, items, options);
-        if (indexCounter[0] - 1 == index) {
-          indexCounter[1]++;
-        } else indexCounter[1] = 0;
-        if (options.reCreateLimit && indexCounter[1] >= options.reCreateLimit) {
+        recreateCount++;
+        if (
+          options.reCreateLimit !== null &&
+          recreateCount >= options.reCreateLimit
+        ) {
           this.showUniqueError(options, options.reCreateLimit);
           options.unique = false;
           options.customCompare = undefined;
         }
+        index--;
+      } else {
+        recreateCount = 0;
+        indexCounter++;
       }
-
-      resultObject.items = items;
     }
 
-    return resultObject;
+    return items;
   };
 
-  protected showUniqueError(options: allMainOptionTypes, limit?: number) {
+  protected showUniqueError(options: allOptionTypes<true>, limit?: number) {
     if (options.progressUpdate && options.progressUpdate.uniqueCheckFailed) {
       options.progressUpdate.uniqueCheckFailed(this.functionName, limit);
     }
@@ -195,11 +173,11 @@ abstract class GeneratorFactory {
     item: unknown,
     index: number,
     items: unknown[],
-    options: allMainOptionTypes
+    options: allOptionTypes<true>
   ) {
     let compareResult: boolean = true;
 
-    if (options.progressUpdate && options.progressUpdate.afterItemCreated) {
+    if (options.progressUpdate.afterItemCreated) {
       options.progressUpdate.afterItemCreated(item, index, this.functionName);
     }
     this.developerLog(options.showLogs, index, item, "item created");
@@ -208,7 +186,7 @@ abstract class GeneratorFactory {
       item = options.customMap(item, index) as number | string;
     }
 
-    if (options.progressUpdate && options.progressUpdate.afterMap) {
+    if (options.progressUpdate.afterMap) {
       options.progressUpdate.afterMap(item, index, this.functionName);
     }
 
@@ -223,7 +201,7 @@ abstract class GeneratorFactory {
       compareResult = options.customCompare(item, items, index) as boolean;
     }
 
-    if (options.progressUpdate && options.progressUpdate.afterCompare) {
+    if (options.progressUpdate.afterCompare) {
       options.progressUpdate.afterCompare(
         item,
         index,
@@ -238,7 +216,7 @@ abstract class GeneratorFactory {
       }
     }
 
-    if (options.progressUpdate && options.progressUpdate.afterUnique) {
+    if (options.progressUpdate.afterUnique) {
       options.progressUpdate.afterUnique(
         item,
         index,
@@ -260,63 +238,50 @@ abstract class GeneratorFactory {
 
     if (compareResult) {
       items[index] = item;
-    } else {
-      index--;
     }
 
-    return index;
+    return compareResult;
   }
 
-  protected returnObjectWithArguments(
-    argObject: functionArguments
-  ): generateFunctionReturn {
+  protected extractFunctionData(
+    options: allBlueprintOptionTypes<true>
+  ): functionData {
     return {
-      items: null,
-      functionData: {
-        arguments: argObject,
-        functionCall: this.generateFromArgObject,
-      },
+      functionOptions: options,
+      functionCall: this.generateArray,
     };
   }
 }
 
 // * Random Numbers
 
-interface randomNumbersOptions
-  extends randomNumberOptions,
-    baseFunctionOptions {}
+type randomNumbersInputs<POPULATED extends boolean> = POPULATED extends true
+  ? {
+      starting: number;
+      ending: number;
+      onlyIntegers: boolean;
+      maximumDigitsAfterPoint: number;
+    }
+  : {
+      starting?: number;
+      ending?: number;
+      onlyIntegers?: boolean;
+      maximumDigitsAfterPoint?: number;
+    };
 
-interface randomNumberOptions {
-  onlyIntegers?: boolean;
-  maximumDigitsAfterPoint?: number;
-}
+type randomNumbersOptions<POPULATED extends boolean> =
+  randomNumbersInputs<POPULATED> & baseGeneratorOptions<POPULATED>;
 
-interface randomNumbersInputs {
-  starting: number;
-  ending: number;
-}
+type randomNumbersBlueprintOptions<POPULATED extends boolean> =
+  randomNumbersInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type randomNumberType = (
-  starting: number,
-  ending: number,
-  options?: randomNumberOptions
-) => number;
+type randomNumbers = (options?: randomNumbersOptions<false>) => unknown[];
 
-type randomNumbersType = (
-  starting: number,
-  ending: number,
-  options?: randomNumbersOptions
-) => generateFunctionReturn | unknown[];
+type randomNumbersBlueprint = (
+  options?: randomNumbersOptions<false>
+) => functionData;
 
-type randomNumbersArgType = ({
-  inputs,
-  options,
-}: {
-  inputs: randomNumbersInputs;
-  options: randomNumbersOptions;
-}) => generateFunctionReturn | unknown[];
-
-class RandomNumbersClass extends GeneratorFactory {
+class RandomNumbersClass extends RandomGeneratorFactory {
   constructor() {
     super();
     this.functionName = "randomNumbers";
@@ -324,53 +289,101 @@ class RandomNumbersClass extends GeneratorFactory {
 
   protected functionName: string;
 
-  protected uniqueErrorCheck: uniqueErrorCheckType = (
-    inputs: randomNumbersInputs,
-    options: randomNumbersOptions
-  ) => {
-    const { starting, ending } = inputs;
+  protected populateOptions: <T extends "blueprint" | "generator">(
+    type: T,
+    options: T extends "blueprint"
+      ? randomNumbersBlueprintOptions<false>
+      : randomNumbersOptions<false>
+  ) => T extends "blueprint"
+    ? randomNumbersBlueprintOptions<true>
+    : randomNumbersOptions<true> = (type, options) => {
+    if (
+      type === "generator" &&
+      (options as randomNumbersOptions<false>).numberOfItems === undefined
+    ) {
+      (options as randomNumbersOptions<false>).numberOfItems = 100;
+    }
 
-    let maximumNumberOfItems = ending - starting;
+    if (options.progressUpdate === undefined) {
+      options.progressUpdate = {};
+    }
+    if (options.reCreateLimit === undefined) {
+      options.reCreateLimit = 2000;
+    }
+    if (options.showLogs === undefined) {
+      options.showLogs = false;
+    }
+    if (options.unique === undefined) {
+      options.unique = false;
+    }
+
+    if (options.starting === undefined) {
+      options.starting = 0;
+    }
+    if (options.ending === undefined) {
+      options.ending = 100;
+    }
+    if (options.onlyIntegers === undefined) {
+      options.onlyIntegers = true;
+    }
+    if (options.maximumDigitsAfterPoint === undefined) {
+      options.maximumDigitsAfterPoint = 5;
+    }
+
+    return options as typeof type extends "blueprint"
+      ? randomNumbersBlueprintOptions<true>
+      : randomNumbersOptions<true>;
+  };
+
+  protected uniqueErrorCheck: uniqueErrorCheckType = (
+    options: allOptionTypes<true>
+  ) => {
+    const optionsWithCorrectType = options as randomNumbersOptions<true>;
+
+    let maximumNumberOfItems =
+      optionsWithCorrectType.ending - optionsWithCorrectType.starting;
 
     if (
-      !options.onlyIntegers &&
-      options.maximumDigitsAfterPoint !== undefined
+      !optionsWithCorrectType.onlyIntegers &&
+      optionsWithCorrectType.maximumDigitsAfterPoint !== undefined
     ) {
-      maximumNumberOfItems *= Math.pow(10, options.maximumDigitsAfterPoint);
+      maximumNumberOfItems *= Math.pow(
+        10,
+        optionsWithCorrectType.maximumDigitsAfterPoint
+      );
     }
 
     maximumNumberOfItems = maximumNumberOfItems == 0 ? 1 : maximumNumberOfItems;
 
-    if (maximumNumberOfItems < options.numberOfItems) {
-      this.showUniqueError(options);
+    if (maximumNumberOfItems < optionsWithCorrectType.numberOfItems) {
+      this.showUniqueError(optionsWithCorrectType);
       return false;
     }
 
-    return options.unique;
+    return optionsWithCorrectType.unique;
   };
 
   protected generateItem: generateItemType = (
-    inputs: randomNumbersInputs,
-    options: randomNumbersOptions
+    options: allOptionTypes<true>
   ) => {
-    const { starting, ending } = inputs;
+    const optionsWithCorrectType = options as randomNumbersOptions<true>;
 
     let item;
 
-    item = Math.random() * (ending - starting) + starting;
+    item =
+      Math.random() *
+        (optionsWithCorrectType.ending - optionsWithCorrectType.starting) +
+      optionsWithCorrectType.starting;
 
-    if (options.onlyIntegers) {
+    if (optionsWithCorrectType.onlyIntegers) {
       item = Math.floor(item as number);
-    } else if (
-      options.maximumDigitsAfterPoint !== undefined &&
-      options.maximumDigitsAfterPoint !== undefined
-    ) {
-      const { maximumDigitsAfterPoint } = options;
+    } else {
       const afterPoint =
-        maximumDigitsAfterPoint === 0
+        optionsWithCorrectType.maximumDigitsAfterPoint === 0
           ? 0
           : Math.floor(
-              Math.random() * Math.pow(10, maximumDigitsAfterPoint)
+              Math.random() *
+                Math.pow(10, optionsWithCorrectType.maximumDigitsAfterPoint)
             ).toString().length;
 
       if (item.toString().includes(".")) {
@@ -382,87 +395,45 @@ class RandomNumbersClass extends GeneratorFactory {
       }
     }
 
-    return { item };
+    return item;
   };
 
-  /**
-   * @param { number } starting - minimum number (included)
-   * @param { number } ending - maximum number (excluded)
-   * @param { object } options - properties of options object
-   * - onlyIntegers?: boolean = false
-   * - maximumDigitsAfterPoint?: number
-   * @returns { number  } Returns number
-   * @example randomNumber( 0, 10, { maximumDigitsAfterPoint: 2 })  ===>   4.3
-   */
-  public randomNumber: randomNumberType = (starting, ending, options = {}) => {
-    return this.generateItem({ starting, ending }, options, 0).item as number;
+  public randomNumbers: randomNumbers = (options = {}) => {
+    const populatedOptions = this.populateOptions("generator", options);
+    return this.generateArray(populatedOptions);
   };
 
-  /**
-   * @param { number } starting - minimum number (included)
-   * @param { number } ending - maximum number (excluded)
-   * @param { object} options - properties of options object
-   * - onlyIntegers?: boolean = false
-   * - maximumDigitsAfterPoint?: number
-   * - unique?: boolean = false
-   * - numberOfItems?: number
-   * - customMap?: (item: number | string, index: number) => any
-   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
-   * - showLogs?: boolean = false
-   * @returns { array } Returns array of random numbers
-   * @example randomNumbers( 0, 10, { numberOfItems: 9, maximumDigitsAfterPoint: 2 })  ===>  [ 5.61, 4.36, 7.28, 0.3, 7.74, 5.93, 8.23, 1.36, 8.24]
-   */
-  public randomNumbers: randomNumbersType = (
-    starting,
-    ending,
-    options = {}
-  ) => {
-    const dataObject = this.generateArray({ starting, ending }, options);
-    return options.numberOfItems === undefined ? dataObject : dataObject.items;
-  };
-
-  public generateFromArgObject: randomNumbersArgType = ({
-    inputs: { starting, ending },
-    options,
-  }) => {
-    return this.randomNumbers(starting, ending, options);
+  public randomNumbersBlueprint: randomNumbersBlueprint = (options = {}) => {
+    const populatedOptions = this.populateOptions("blueprint", options);
+    return this.extractFunctionData(populatedOptions);
   };
 }
 
 // * Random From Array
 
-interface randomsFromArrayOptions
-  extends baseFunctionOptions,
-    randomFromArrayOptions {
-  keepOrder?: boolean;
-}
+type randomFromArrayInputs<POPULATED extends boolean> = POPULATED extends true
+  ? {
+      arrayOfItems: unknown[];
+      keepOrder: boolean;
+    }
+  : {
+      arrayOfItems: unknown[];
+      keepOrder?: boolean;
+    };
 
-interface randomFromArrayOptions {}
+type randomFromArrayOptions<POPULATED extends boolean> =
+  randomFromArrayInputs<POPULATED> & baseGeneratorOptions<POPULATED>;
 
-interface randomsFromArrayInputs {
-  arrayOfItems: unknown[];
-}
+type randomFromArrayBlueprintOptions<POPULATED extends boolean> =
+  randomFromArrayInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type randomFromArrayType = (
-  arrayOfItems: unknown[],
-  options?: randomFromArrayOptions
-) => unknown;
+type randomFromArray = (options: randomFromArrayOptions<false>) => unknown[];
 
-type randomsFromArrayType = (
-  arrayOfItems: unknown[],
-  options?: randomsFromArrayOptions
-) => generateFunctionReturn | unknown[];
+type randomFromArrayBlueprint = (
+  options: randomFromArrayOptions<false>
+) => functionData;
 
-type randomsFromArrayArgType = ({
-  inputs,
-  options,
-}: {
-  inputs: randomsFromArrayInputs;
-  options: randomsFromArrayOptions;
-}) => generateFunctionReturn | unknown[];
-
-class RandomFromArrayClass extends GeneratorFactory {
+class RandomFromArrayClass extends RandomGeneratorFactory {
   constructor() {
     super();
     this.functionName = "randomFromArray";
@@ -470,106 +441,119 @@ class RandomFromArrayClass extends GeneratorFactory {
 
   protected functionName: string;
 
-  protected uniqueErrorCheck = (
-    inputs: randomsFromArrayInputs,
-    options: randomsFromArrayOptions
-  ) => {
-    let { arrayOfItems } = inputs;
+  protected populateOptions: <T extends "blueprint" | "generator">(
+    type: T,
+    options: T extends "blueprint"
+      ? randomFromArrayBlueprintOptions<false>
+      : randomFromArrayOptions<false>
+  ) => T extends "blueprint"
+    ? randomFromArrayBlueprintOptions<true>
+    : randomFromArrayOptions<true> = (type, options) => {
+    if (
+      type === "generator" &&
+      (options as randomFromArrayOptions<false>).numberOfItems === undefined
+    ) {
+      (options as randomFromArrayOptions<false>).numberOfItems = 100;
+    }
+
+    if (options.progressUpdate === undefined) {
+      options.progressUpdate = {};
+    }
+    if (options.reCreateLimit === undefined) {
+      options.reCreateLimit = 2000;
+    }
+    if (options.showLogs === undefined) {
+      options.showLogs = false;
+    }
+    if (options.unique === undefined) {
+      options.unique = false;
+    }
+
+    if (options.arrayOfItems === undefined) {
+      throw Error("Options parameter must have arrayOfItems property.");
+    }
+    if (options.keepOrder === undefined) {
+      options.keepOrder = false;
+    }
+
+    return options as typeof type extends "blueprint"
+      ? randomFromArrayBlueprintOptions<true>
+      : randomFromArrayOptions<true>;
+  };
+
+  protected uniqueErrorCheck = (options: allOptionTypes<true>) => {
+    const optionsWithCorrectType = options as randomFromArrayOptions<true>;
+
+    let { arrayOfItems } = optionsWithCorrectType;
     arrayOfItems = [...new Set(arrayOfItems)];
 
     const maximumNumberOfItems = arrayOfItems.length;
 
-    if (maximumNumberOfItems < options.numberOfItems) {
-      this.showUniqueError(options);
+    if (maximumNumberOfItems < optionsWithCorrectType.numberOfItems) {
+      this.showUniqueError(optionsWithCorrectType);
       return false;
     }
 
     return options.unique;
   };
+
   protected generateItem: generateItemType = (
-    { arrayOfItems }: randomsFromArrayInputs,
-    options: randomsFromArrayOptions,
+    options: allOptionTypes<true>,
     index
   ) => {
-    const item = options.keepOrder
-      ? arrayOfItems[index % arrayOfItems.length]
-      : arrayOfItems[Math.floor(Math.random() * arrayOfItems.length)];
+    const optionsWithCorrectType = options as randomFromArrayOptions<true>;
 
-    return { item };
+    const item = optionsWithCorrectType.keepOrder
+      ? optionsWithCorrectType.arrayOfItems[
+          index % optionsWithCorrectType.arrayOfItems.length
+        ]
+      : optionsWithCorrectType.arrayOfItems[
+          Math.floor(Math.random() * optionsWithCorrectType.arrayOfItems.length)
+        ];
+
+    return item;
   };
 
-  /**
-   * @param { array } arrayOfItems - Array of different elements
-   * @returns { any } Returns an element that randomly chosen from given array
-   * @example randomFromArray([ 9, 8, 4, {test:99})  ===>   8
-   */
-  public randomFromArray: randomFromArrayType = (arrayOfItems) => {
-    return this.generateItem({ arrayOfItems }, {}, 0).item;
+  public randomFromArray: randomFromArray = (options) => {
+    const populatedOptions = this.populateOptions("generator", options);
+    return this.generateArray(populatedOptions);
   };
 
-  /**
-   * @param { array } arrayOfItems - Array of different elements
-   * @param { object } options - properties of options object
-   * - keepOrder?: boolean = false
-   * - unique?: boolean = false
-   * - numberOfItems?: number
-   * - customMap?: (item: number | string, index: number) => any
-   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
-   * - showLogs?: boolean = false
-   * @returns { array } Returns array of random elements that chosen from given array
-   * @description By setting keepOrder to true it can create array without randomizing
-   * @example randomsFromArray([ 9, 8, 4, {test:99}, [45]], { numberOfItems:4, unique:true })  ===>  [ [45], {test:99}, 9, 8 ]
-   */
-  public randomsFromArray: randomsFromArrayType = (
-    arrayOfItems,
-    options = {}
-  ) => {
-    const dataObject = this.generateArray({ arrayOfItems }, options);
-
-    return options.numberOfItems === undefined ? dataObject : dataObject.items;
-  };
-
-  public generateFromArgObject: randomsFromArrayArgType = ({
-    inputs: { arrayOfItems },
-    options,
-  }) => {
-    return this.randomsFromArray(arrayOfItems, options);
+  public randomFromArrayBlueprint: randomFromArrayBlueprint = (options) => {
+    const populatedOptions = this.populateOptions("blueprint", options);
+    return this.extractFunctionData(populatedOptions);
   };
 }
+
 // * Random ID
 
-interface randomIDsOptions extends baseFunctionOptions, randomIDOptions {}
+type charLibs = "number" | "letter" | "symbol";
 
-interface randomIDOptions {
-  charLib?: string[];
-}
+type randomIDsInputs<POPULATED extends boolean> = POPULATED extends true
+  ? {
+      minIDLength: number;
+      maxIDLength: number;
+      charLib: charLibs[];
+    }
+  : {
+      minIDLength?: number;
+      maxIDLength?: number;
+      charLib?: charLibs[];
+    };
 
-interface randomIDsInputs {
-  minIDLength: number;
-  maxIDLength: number;
-}
-type randomIDType = (
-  minIDLength: number,
-  maxIDLength: number,
-  options?: randomIDOptions
-) => string;
+type randomIDsOptions<POPULATED extends boolean> = randomIDsInputs<POPULATED> &
+  baseGeneratorOptions<POPULATED>;
 
-type randomIDsType = (
-  minIDLength: number,
-  maxIDLength: number,
-  options?: randomIDsOptions
-) => generateFunctionReturn | unknown[];
+type randomIDsBlueprintOptions<POPULATED extends boolean> =
+  randomIDsInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type randomIDsArgType = ({
-  inputs,
-  options,
-}: {
-  inputs: randomIDsInputs;
-  options: randomIDsOptions;
-}) => generateFunctionReturn | unknown[];
+type randomIDs = (options?: randomIDsOptions<false>) => unknown[];
 
-class randomIDClass extends GeneratorFactory {
+type randomIDsBlueprint = (
+  options?: randomIDsBlueprintOptions<false>
+) => functionData;
+
+class RandomIDsClass extends RandomGeneratorFactory {
   constructor() {
     super();
     this.functionName = "randomIDs";
@@ -578,7 +562,7 @@ class randomIDClass extends GeneratorFactory {
   protected functionName: string;
 
   protected charLibObject = {
-    number: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    number: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
     letter: [
       "a",
       "b",
@@ -669,38 +653,87 @@ class randomIDClass extends GeneratorFactory {
     ],
   };
 
-  protected generateItem: generateItemType = (
-    { minIDLength, maxIDLength }: randomIDsInputs,
-    { charLib = ["number", "letter", "symbol"] }: randomIDsOptions
-  ) => {
+  protected populateOptions: <T extends "blueprint" | "generator">(
+    type: T,
+    options: T extends "blueprint"
+      ? randomIDsBlueprintOptions<false>
+      : randomIDsOptions<false>
+  ) => T extends "blueprint"
+    ? randomIDsBlueprintOptions<true>
+    : randomIDsOptions<true> = (type, options) => {
+    if (
+      type === "generator" &&
+      (options as randomIDsOptions<false>).numberOfItems === undefined
+    ) {
+      (options as randomIDsOptions<false>).numberOfItems = 100;
+    }
+
+    if (options.progressUpdate === undefined) {
+      options.progressUpdate = {};
+    }
+    if (options.reCreateLimit === undefined) {
+      options.reCreateLimit = 2000;
+    }
+    if (options.showLogs === undefined) {
+      options.showLogs = false;
+    }
+    if (options.unique === undefined) {
+      options.unique = false;
+    }
+
+    if (options.minIDLength === undefined) {
+      options.minIDLength = 16;
+    }
+    if (options.maxIDLength === undefined) {
+      options.maxIDLength = 8;
+    }
+    if (options.charLib === undefined) {
+      options.charLib = ["letter", "number", "number"];
+    }
+
+    return options as typeof type extends "blueprint"
+      ? randomIDsBlueprintOptions<true>
+      : randomIDsOptions<true>;
+  };
+
+  protected generateItem: generateItemType = (options) => {
+    const optionsWithCorrectType = options as randomIDsOptions<true>;
+
     const chars: string[] = [];
 
     const IDLength = Math.floor(
-      Math.random() * (maxIDLength - minIDLength + 1) + minIDLength
+      Math.random() *
+        (optionsWithCorrectType.maxIDLength -
+          optionsWithCorrectType.minIDLength +
+          1) +
+        optionsWithCorrectType.minIDLength
     );
 
     for (let i = 0; i < IDLength; i++) {
       const randomLib =
-        this.charLibObject[charLib[Math.floor(Math.random() * charLib.length)]];
+        this.charLibObject[
+          optionsWithCorrectType.charLib[
+            Math.floor(Math.random() * optionsWithCorrectType.charLib.length)
+          ]
+        ];
 
       chars[i] = randomLib[Math.floor(Math.random() * randomLib.length)];
     }
 
     const item = chars.join("");
 
-    return { item };
+    return item;
   };
 
-  protected uniqueErrorCheck = (
-    inputs: randomIDsInputs,
-    options: randomIDsOptions = {}
-  ) => {
+  protected uniqueErrorCheck = (options: allOptionTypes<true>) => {
+    const optionsWithCorrectType = options as randomIDsOptions<true>;
+
     let maxArrLength: number = 0;
 
-    if (options.charLib === undefined) {
+    if (optionsWithCorrectType.charLib === undefined) {
       maxArrLength = 10 + 52 + 32;
     } else {
-      options.charLib.forEach((element) => {
+      optionsWithCorrectType.charLib.forEach((element) => {
         switch (element) {
           case "number":
             maxArrLength += 10;
@@ -708,7 +741,7 @@ class randomIDClass extends GeneratorFactory {
           case "letter":
             maxArrLength += 52;
             break;
-          case "symbols":
+          case "symbol":
             maxArrLength += 32;
             break;
           default:
@@ -717,7 +750,11 @@ class randomIDClass extends GeneratorFactory {
       });
     }
     let maxUniquePossibility: number = 0;
-    for (let i = inputs.minIDLength; i < inputs.maxIDLength + 1; i++) {
+    for (
+      let i = optionsWithCorrectType.minIDLength;
+      i < optionsWithCorrectType.maxIDLength + 1;
+      i++
+    ) {
       maxUniquePossibility += Math.pow(maxArrLength, i);
     }
 
@@ -728,80 +765,42 @@ class randomIDClass extends GeneratorFactory {
     }
   };
 
-  /**
-   * @param { number } minIDLength - min id length
-   * @param { number } maxIDLength - max id length
-   * @param { object } options - properties of options object
-   * - charLib?: string[] = ["number", "letter" ,"symbol"]
-   * @returns { string } Returns a string
-   * @description Available libraries are  number, letter and symbol. To include a library put in charLib array as string.
-   * @example randomID(5, 6)  ===>  "4//3A"
-   */
-  public randomID: randomIDType = (minIDLength, maxIDLength, options = {}) => {
-    return this.generateItem({ minIDLength, maxIDLength }, options, 0)
-      .item as string;
+  public randomIDs: randomIDs = (options = {}) => {
+    const populatedOptions = this.populateOptions("generator", options);
+    return this.generateArray(populatedOptions);
   };
 
-  /**
-   * @param { number } minIDLength - min id length
-   * @param { number } maxIDLength - max id length
-   * @param { object } options - properties of options object
-   * - charLib?: string[] = ["number", "letter" ,"symbol"]
-   * - unique?: boolean = false
-   * - numberOfItems?: number
-   * - customMap?: (item: number | string, index: number) => any
-   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
-   * - showLogs?: boolean = false
-   * @returns { array } Returns array of random strings
-   * @description Available libraries are  number, letter and symbol. To include a library put in charLib array as string.
-   * @example   randomIDs(5, 6, {numberOfItems: 4, unique: true, charLib: ["symbol", "letter"],})  ===> [ '_+|%Y', 'wzzn$', "sO;'Y`", '_KNdkn' ]
-   */
-  public randomIDs: randomIDsType = (
-    minIDLength,
-    maxIDLength,
-    options = {}
-  ) => {
-    const dataObject = this.generateArray(
-      { minIDLength, maxIDLength },
-      options
-    );
-
-    return options.numberOfItems === undefined ? dataObject : dataObject.items;
-  };
-
-  public generateFromArgObject: randomIDsArgType = ({
-    inputs: { minIDLength, maxIDLength },
-    options,
-  }) => {
-    return this.randomIDs(minIDLength, maxIDLength, options);
+  public randomIDsBlueprint: randomIDsBlueprint = (options = {}) => {
+    const populatedOptions = this.populateOptions("blueprint", options);
+    return this.extractFunctionData(populatedOptions);
   };
 }
 
 // * Gradual Value
 
-interface gradualValueOptions extends baseFunctionOptions {
-  incrementValue?: number;
-}
+type gradualValueInputs<POPULATED extends boolean> = POPULATED extends true
+  ? {
+      starting: number;
+      incrementValue: number;
+    }
+  : {
+      starting?: number;
+      incrementValue?: number;
+    };
 
-interface gradualValueInputs {
-  starting: number;
-}
+type gradualValueOptions<POPULATED extends boolean> =
+  gradualValueInputs<POPULATED> & baseGeneratorOptions<POPULATED>;
 
-type gradualValueType = (
-  starting: number,
-  options?: gradualValueOptions
-) => generateFunctionReturn | unknown[];
+type gradualValueBlueprintOptions<POPULATED extends boolean> =
+  gradualValueInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type gradualValueArgType = ({
-  inputs,
-  options,
-}: {
-  inputs: gradualValueInputs;
-  options: gradualValueOptions;
-}) => generateFunctionReturn | unknown[];
+type gradualValue = (options?: gradualValueOptions<false>) => unknown[];
 
-class GradualValueClass extends GeneratorFactory {
+type gradualValueBlueprint = (
+  options?: gradualValueBlueprintOptions<false>
+) => functionData;
+
+class GradualValueClass extends RandomGeneratorFactory {
   constructor() {
     super();
     this.functionName = "gradualValue";
@@ -809,21 +808,60 @@ class GradualValueClass extends GeneratorFactory {
 
   protected functionName: string;
 
-  protected generateItem: generateItemType = (
-    { starting }: gradualValueInputs,
-    { incrementValue = 1 }: gradualValueOptions,
-    index
-  ) => {
-    const item = starting + index * incrementValue;
+  protected populateOptions: <T extends "blueprint" | "generator">(
+    type: T,
+    options: T extends "blueprint"
+      ? gradualValueBlueprintOptions<false>
+      : gradualValueOptions<false>
+  ) => T extends "blueprint"
+    ? gradualValueBlueprintOptions<true>
+    : gradualValueOptions<true> = (type, options) => {
+    if (
+      type === "generator" &&
+      (options as gradualValueOptions<false>).numberOfItems === undefined
+    ) {
+      (options as gradualValueOptions<false>).numberOfItems = 100;
+    }
 
-    return { item };
+    if (options.progressUpdate === undefined) {
+      options.progressUpdate = {};
+    }
+    if (options.reCreateLimit === undefined) {
+      options.reCreateLimit = 2000;
+    }
+    if (options.showLogs === undefined) {
+      options.showLogs = false;
+    }
+    if (options.unique === undefined) {
+      options.unique = false;
+    }
+
+    if (options.starting === undefined) {
+      options.starting = 0;
+    }
+    if (options.incrementValue === undefined) {
+      options.incrementValue = 1;
+    }
+
+    return options as typeof type extends "blueprint"
+      ? gradualValueBlueprintOptions<true>
+      : gradualValueOptions<true>;
   };
 
-  protected uniqueErrorCheck = (
-    inputs: gradualValueInputs,
-    options: gradualValueOptions
-  ) => {
-    if (options.incrementValue === 0) {
+  protected generateItem: generateItemType = (options, index) => {
+    const optionsWithCorrectType = options as gradualValueOptions<true>;
+
+    const item =
+      optionsWithCorrectType.starting +
+      index * optionsWithCorrectType.incrementValue;
+
+    return item;
+  };
+
+  protected uniqueErrorCheck = (options: allOptionTypes<true>) => {
+    const optionsWithCorrectType = options as gradualValueOptions<true>;
+
+    if (optionsWithCorrectType.incrementValue === 0) {
       this.showUniqueError(options);
       return false;
     }
@@ -831,56 +869,38 @@ class GradualValueClass extends GeneratorFactory {
     return options.unique;
   };
 
-  /**
-   * @param { number } starting - Starting number
-   * @param { object } options - properties of options object
-   * - incrementValue?: number = 1
-   * - unique?: boolean = false
-   * - numberOfItems?: number
-   * - customMap?: (item: number | string, index: number) => any
-   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
-   * - showLogs?: boolean = false
-   * @returns { array } Returns an array started with starting number and increased every item by incrementValue
-   * @description It can be used for gradually increase a value between objects
-   * @example gradualValue(5,{ numberOfItems:3, incrementValue: 5 })  ===>  [ 5, 10, 15 ]
-   */
-  public gradualValue: gradualValueType = (starting, options = {}) => {
-    const dataObject = this.generateArray({ starting }, options);
-
-    return options.numberOfItems === undefined ? dataObject : dataObject.items;
+  public gradualValue: gradualValue = (options = {}) => {
+    const populatedOptions = this.populateOptions("generator", options);
+    return this.generateArray(populatedOptions);
   };
 
-  public generateFromArgObject: gradualValueArgType = ({
-    inputs: { starting },
-    options,
-  }) => {
-    return this.gradualValue(starting, options);
+  public gradualValueBlueprint: gradualValueBlueprint = (options = {}) => {
+    const populatedOptions = this.populateOptions("blueprint", options);
+    return this.extractFunctionData(populatedOptions);
   };
 }
 
 // * Random Custom Function
 
-interface randomCustomFunctionOptions extends baseFunctionOptions {}
-
-interface randomCustomFunctionInputs {
+type randomCustomFunctionInputs = {
   customFunction: (index: number) => unknown;
-}
+};
 
-type randomCustomFunctionType = (
-  customFunction: (index: number) => unknown,
-  options?: randomCustomFunctionOptions
-) => generateFunctionReturn | unknown[];
+type randomCustomFunctionOptions<POPULATED extends boolean> =
+  randomCustomFunctionInputs & baseGeneratorOptions<POPULATED>;
 
-type randomCustomFunctionArgType = ({
-  inputs,
-  options,
-}: {
-  inputs: randomCustomFunctionInputs;
-  options: randomCustomFunctionOptions;
-}) => generateFunctionReturn | unknown[];
+type randomCustomFunctionBlueprintOptions<POPULATED extends boolean> =
+  randomCustomFunctionInputs & baseBlueprintOptions<POPULATED>;
 
-class RandomCustomFunctionClass extends GeneratorFactory {
+type randomCustomFunction = (
+  options: randomCustomFunctionOptions<false>
+) => unknown[];
+
+type randomCustomFunctionBlueprint = (
+  options: randomCustomFunctionBlueprintOptions<false>
+) => functionData;
+
+class RandomCustomFunctionClass extends RandomGeneratorFactory {
   constructor() {
     super();
     this.functionName = "randomCustomFunction";
@@ -888,96 +908,97 @@ class RandomCustomFunctionClass extends GeneratorFactory {
 
   protected functionName: string;
 
-  protected generateItem: generateItemType = (
-    { customFunction }: randomCustomFunctionInputs,
-    options,
-    index
-  ) => {
-    const item = customFunction(index);
+  protected populateOptions: <T extends "blueprint" | "generator">(
+    type: T,
+    options: T extends "blueprint"
+      ? randomCustomFunctionBlueprintOptions<false>
+      : randomCustomFunctionOptions<false>
+  ) => T extends "blueprint"
+    ? randomCustomFunctionBlueprintOptions<true>
+    : randomCustomFunctionOptions<true> = (type, options) => {
+    if (
+      type === "generator" &&
+      (options as randomCustomFunctionOptions<false>).numberOfItems ===
+        undefined
+    ) {
+      (options as randomCustomFunctionOptions<false>).numberOfItems = 100;
+    }
 
-    return { item };
-  };
-
-  protected uniqueErrorCheck = (
-    inputs: randomCustomFunctionInputs,
-    options: randomCustomFunctionOptions
-  ) => {
-    return options.unique;
-  };
-
-  /**
-   * @param { function } customFunction Custom function that returns one element
-   * @param { object } options - properties of options object
-   * - unique?: boolean = false
-   * - numberOfItems?: number
-   * - customMap?: (item: number | string, index: number) => any
-   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
-   * - showLogs?: boolean = true
-   * @returns { array }
-   * @example randomCustomFunction(()=>{ return Date.now() },{ numberOfItems:3, unique: true })  ===>  [ 1686916732354, 1686916732355, 1686916732356 ]
-   */
-  randomCustomFunction: randomCustomFunctionType = (
-    customFunction,
-    options = {}
-  ) => {
+    if (options.progressUpdate === undefined) {
+      options.progressUpdate = {};
+    }
+    if (options.reCreateLimit === undefined) {
+      options.reCreateLimit = 2000;
+    }
     if (options.showLogs === undefined) {
       options.showLogs = true;
     }
+    if (options.unique === undefined) {
+      options.unique = false;
+    }
 
-    const dataObject = this.generateArray({ customFunction }, options);
-
-    return options.numberOfItems === undefined ? dataObject : dataObject.items;
+    return options as typeof type extends "blueprint"
+      ? randomCustomFunctionBlueprintOptions<true>
+      : randomCustomFunctionOptions<true>;
   };
 
-  public generateFromArgObject: randomCustomFunctionArgType = ({
-    inputs: { customFunction },
-    options,
-  }) => {
-    return this.randomCustomFunction(customFunction, options);
+  protected generateItem: generateItemType = (options, index) => {
+    const optionsWithCorrectType = options as randomCustomFunctionOptions<true>;
+    return optionsWithCorrectType.customFunction(index);
+  };
+
+  protected uniqueErrorCheck = (options: allOptionTypes<true>) => {
+    const optionsWithCorrectType = options as randomCustomFunctionOptions<true>;
+    return optionsWithCorrectType.unique;
+  };
+
+  public randomCustomFunction: randomCustomFunction = (options) => {
+    const populatedOptions = this.populateOptions("generator", options);
+    return this.generateArray(populatedOptions);
+  };
+
+  public randomCustomFunctionBlueprint: randomCustomFunctionBlueprint = (
+    options
+  ) => {
+    const populatedOptions = this.populateOptions("blueprint", options);
+    return this.extractFunctionData(populatedOptions);
   };
 }
 
 // * Random String
 
-interface randomStringsOptions
-  extends baseFunctionOptions,
-    randomStringOptions {}
+type wordLibs = "name" | "adjective" | "country" | "noun";
 
-interface randomStringOptions {
-  separator?: string;
-  lib?: string[];
-}
+type randomStringsInputs<POPULATED extends boolean> = POPULATED extends true
+  ? {
+      minNumberOfWords: number;
+      maxNumberOfWords: number;
+      separator: string;
+      lib: wordLibs[];
+    }
+  : {
+      minNumberOfWords?: number;
+      maxNumberOfWords?: number;
+      separator?: string;
+      lib?: wordLibs[];
+    };
 
-interface randomStringsInputs {
-  minNumberOfWords: number;
-  maxNumberOfWords: number;
-}
+type randomStringsOptions<POPULATED extends boolean> =
+  randomStringsInputs<POPULATED> & baseGeneratorOptions<POPULATED>;
 
-type randomStringType = (
-  minNumberOfWords: number,
-  maxNumberOfWords: number,
-  options?: randomStringOptions
-) => string;
+type randomStringsBlueprintOptions<POPULATED extends boolean> =
+  randomStringsInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type randomStringsType = (
-  minNumberOfWords: number,
-  maxNumberOfWords: number,
-  options?: randomStringsOptions
-) => generateFunctionReturn | unknown[];
+type randomStrings = (options?: randomStringsOptions<false>) => unknown[];
 
-type randomStringsArgType = ({
-  inputs,
-  options,
-}: {
-  inputs: randomStringsInputs;
-  options: randomStringsOptions;
-}) => generateFunctionReturn | unknown[];
+type randomStringsBlueprint = (
+  options?: randomStringsBlueprintOptions<false>
+) => functionData;
 
-class RandomStringClass extends GeneratorFactory {
+class RandomStringsClass extends RandomGeneratorFactory {
   constructor() {
     super();
-    this.functionName = "randomString";
+    this.functionName = "randomStrings";
   }
   protected functionName: string;
 
@@ -988,91 +1009,63 @@ class RandomStringClass extends GeneratorFactory {
     noun: listOfNouns, // 1000
   };
 
-  protected generateItem: generateItemType = (
-    { minNumberOfWords, maxNumberOfWords }: randomStringsInputs,
-    {
-      lib = ["name", "adjective", "country", "noun"],
-      separator = "",
-    }: randomStringsOptions
-  ) => {
-    let item: string = "";
-    const wordCount = Math.floor(
-      Math.random() * (maxNumberOfWords - minNumberOfWords + 1) +
-        minNumberOfWords
-    );
-
-    for (let i = 0; i < wordCount; i++) {
-      const randomLib =
-        this.stringLib[lib[Math.floor(Math.random() * lib.length)]];
-
-      item += randomLib[Math.floor(Math.random() * randomLib.length)];
-
-      if (i + 1 !== wordCount) {
-        item += separator;
-      }
+  protected populateOptions: <T extends "blueprint" | "generator">(
+    type: T,
+    options: T extends "blueprint"
+      ? randomStringsBlueprintOptions<false>
+      : randomStringsOptions<false>
+  ) => T extends "blueprint"
+    ? randomStringsBlueprintOptions<true>
+    : randomStringsOptions<true> = (type, options) => {
+    if (
+      type === "generator" &&
+      (options as randomStringsOptions<false>).numberOfItems === undefined
+    ) {
+      (options as randomStringsOptions<false>).numberOfItems = 100;
     }
 
-    return { item };
-  };
+    if (options.progressUpdate === undefined) {
+      options.progressUpdate = {};
+    }
+    if (options.reCreateLimit === undefined) {
+      options.reCreateLimit = 2000;
+    }
+    if (options.showLogs === undefined) {
+      options.showLogs = false;
+    }
+    if (options.unique === undefined) {
+      options.unique = false;
+    }
 
-  /**
-   * @param { number } minNumberOfWords - min number of words that result will contain
-   * @param { number } maxNumberOfWords - max number of words that result will contain
-   * @param { object } options - properties of options object
-   * - separator?: string = ""
-   * - lib?: string[] = ["name", "adjective", "country", "noun"]
-   * @returns { string } Returns string
-   * @description Available libraries are name, adjective, country and noun. To include a library put in lib array as string.
-   * @example randomString(5, 6)  ===>  "focusedTanzaniacomposedchiefCeylon"
-   */
-  randomString: randomStringType = (
-    minNumberOfWords,
-    maxNumberOfWords,
-    options = {}
-  ) => {
-    return this.generateItem({ minNumberOfWords, maxNumberOfWords }, options, 0)
-      .item as string;
-  };
+    if (options.minNumberOfWords === undefined) {
+      options.minNumberOfWords = 2;
+    }
+    if (options.maxNumberOfWords === undefined) {
+      options.maxNumberOfWords = 3;
+    }
+    if (options.lib === undefined) {
+      options.lib = ["name", "adjective"];
+    }
+    if (options.separator === undefined) {
+      options.separator = " ";
+    }
 
-  /**
-   * @param { number } minIDLength - min number of words that result will contain
-   * @param { number } maxIDLength - max number of words that result will contain
-   * @param { object } options - properties of options object
-   * - separator?: string = ""
-   * - lib?: string[] = ["name", "adjective", "country", "noun"]
-   * - unique?: boolean = false
-   * - numberOfItems?: number
-   * - customMap?: (item: number | string, index: number) => any
-   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
-   * - showLogs?: boolean = false
-   * @returns { Array } Returns Array of strings
-   * @description Available libraries are name, adjective, country and noun. To include a library put in lib array as string.
-   * @example randomStrings(1, 1, {lib: ["country"], numberOfItems: 5})  ===>  [ "Poland", "State of Palestine", "Austria", "Belize", "Bhutan" ]
-   */
-  randomStrings: randomStringsType = (
-    minNumberOfWords,
-    maxNumberOfWords,
-    options = {}
-  ) => {
-    const dataObject = this.generateArray(
-      { minNumberOfWords, maxNumberOfWords },
-      options
-    );
-
-    return options.numberOfItems === undefined ? dataObject : dataObject.items;
+    return options as typeof type extends "blueprint"
+      ? randomStringsBlueprintOptions<true>
+      : randomStringsOptions<true>;
   };
 
   protected uniqueErrorCheck: uniqueErrorCheckType = (
-    inputs: randomStringsInputs,
-    options: randomStringsOptions = {}
+    options: allOptionTypes<true>
   ) => {
+    const optionsWithCorrectType = options as randomStringsOptions<true>;
+
     let maxArrLength: number = 0;
 
-    if (options.lib === undefined) {
+    if (optionsWithCorrectType.lib === undefined) {
       maxArrLength = 6779 + 1314 + 193 + 1000;
     } else {
-      options.lib.forEach((element) => {
+      optionsWithCorrectType.lib.forEach((element) => {
         switch (element) {
           case "name":
             maxArrLength += 6779;
@@ -1093,8 +1086,8 @@ class RandomStringClass extends GeneratorFactory {
     }
     let maxUniquePossibility: number = 0;
     for (
-      let i = inputs.minNumberOfWords;
-      i < inputs.maxNumberOfWords + 1;
+      let i = optionsWithCorrectType.minNumberOfWords;
+      i < optionsWithCorrectType.maxNumberOfWords + 1;
       i++
     ) {
       maxUniquePossibility += Math.pow(maxArrLength, i);
@@ -1106,52 +1099,78 @@ class RandomStringClass extends GeneratorFactory {
     }
   };
 
-  public generateFromArgObject: randomStringsArgType = ({
-    inputs,
-    options,
-  }) => {
-    return this.randomStrings(
-      inputs.minNumberOfWords,
-      inputs.maxNumberOfWords,
-      options
+  protected generateItem: generateItemType = (options) => {
+    const optionsWithCorrectType = options as randomStringsOptions<true>;
+
+    let item: string = "";
+    const wordCount = Math.floor(
+      Math.random() *
+        (optionsWithCorrectType.maxNumberOfWords -
+          optionsWithCorrectType.minNumberOfWords +
+          1) +
+        optionsWithCorrectType.minNumberOfWords
     );
+
+    for (let i = 0; i < wordCount; i++) {
+      const randomLib =
+        this.stringLib[
+          optionsWithCorrectType.lib[
+            Math.floor(Math.random() * optionsWithCorrectType.lib.length)
+          ] as keyof typeof this.stringLib
+        ];
+
+      item += randomLib[Math.floor(Math.random() * randomLib.length)];
+
+      if (i + 1 !== wordCount) {
+        item += optionsWithCorrectType.separator;
+      }
+    }
+
+    return item;
+  };
+
+  public randomStrings: randomStrings = (options = {}) => {
+    const populatedOptions = this.populateOptions("generator", options);
+    return this.generateArray(populatedOptions);
+  };
+
+  public randomStringsBlueprint: randomStringsBlueprint = (options = {}) => {
+    const populatedOptions = this.populateOptions("generator", options);
+    return this.extractFunctionData(populatedOptions);
   };
 }
 
 // * Random Array
 
-interface randomArraysOptions extends baseFunctionOptions, randomArrayOptions {}
+type randomArrayInputs<POPULATED extends boolean> = POPULATED extends true
+  ? {
+      arrayOfItems: unknown[];
+      minLengthOfArray: number;
+      maxLengthOfArray: number;
+      keepOrder: boolean;
+      allowDuplicates: boolean;
+    }
+  : {
+      arrayOfItems: unknown[];
+      minLengthOfArray?: number;
+      maxLengthOfArray?: number;
+      keepOrder?: boolean;
+      allowDuplicates?: boolean;
+    };
 
-interface randomArrayOptions {
-  minLengthOfArray?: number;
-  maxLengthOfArray?: number;
-  keepOrder?: boolean;
-  allowDuplicates?: boolean;
-}
+type randomArrayOptions<POPULATED extends boolean> =
+  randomArrayInputs<POPULATED> & baseGeneratorOptions<POPULATED>;
 
-interface randomArraysInputs {
-  arrayOfItems: unknown[];
-}
+type randomArrayBlueprintOptions<POPULATED extends boolean> =
+  randomArrayInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type randomArrayType = (
-  arrayOfItems: unknown[],
-  options?: randomArrayOptions
-) => unknown[];
+type randomArray = (options: randomArrayOptions<false>) => unknown[];
 
-type randomArraysType = (
-  arrayOfItems: unknown[],
-  options?: randomArraysOptions
-) => generateFunctionReturn | unknown[][];
+type randomArrayBlueprint = (
+  options: randomArrayBlueprintOptions<false>
+) => functionData;
 
-type randomArraysArgType = ({
-  inputs,
-  options,
-}: {
-  inputs: randomArraysInputs;
-  options: randomsFromArrayOptions;
-}) => generateFunctionReturn | unknown[];
-
-class RandomArrayClass extends GeneratorFactory {
+class RandomArrayClass extends RandomGeneratorFactory {
   constructor() {
     super();
     this.functionName = "randomArray";
@@ -1159,64 +1178,97 @@ class RandomArrayClass extends GeneratorFactory {
 
   protected functionName: string;
 
-  protected uniqueErrorCheck = (
-    inputs: randomArraysInputs,
-    options: randomArraysOptions
-  ) => {
+  protected populateOptions: <T extends "blueprint" | "generator">(
+    type: T,
+    options: T extends "blueprint"
+      ? randomArrayBlueprintOptions<false>
+      : randomArrayOptions<false>
+  ) => T extends "blueprint"
+    ? randomArrayBlueprintOptions<true>
+    : randomArrayOptions<true> = (type, options) => {
+    if (
+      type === "generator" &&
+      (options as randomArrayOptions<false>).numberOfItems === undefined
+    ) {
+      (options as randomArrayOptions<false>).numberOfItems = 100;
+    }
+
+    if (options.progressUpdate === undefined) {
+      options.progressUpdate = {};
+    }
+    if (options.reCreateLimit === undefined) {
+      options.reCreateLimit = 2000;
+    }
+    if (options.showLogs === undefined) {
+      options.showLogs = false;
+    }
+    if (options.unique === undefined) {
+      options.unique = false;
+    }
+
+    if (options.arrayOfItems === undefined) {
+      throw Error("arrayOfItems property must be defined.");
+    }
+    if (options.allowDuplicates === undefined) {
+      options.allowDuplicates = false;
+    }
+    if (options.keepOrder === undefined) {
+      options.keepOrder = false;
+    }
+    if (options.minLengthOfArray === undefined) {
+      options.minLengthOfArray = 1;
+    }
+    if (options.maxLengthOfArray === undefined) {
+      options.maxLengthOfArray = options.arrayOfItems.length - 1;
+    }
+
+    return options as typeof type extends "blueprint"
+      ? randomArrayBlueprintOptions<true>
+      : randomArrayOptions<true>;
+  };
+
+  protected uniqueErrorCheck = (options: allOptionTypes<true>) => {
+    const optionsWithCorrectType = options as randomArrayOptions<true>;
     // TODO: add proper one
 
-    if (
-      options.allowDuplicates === false ||
-      options.allowDuplicates === undefined
-    ) {
-      const uniqueItemsCount = [...new Set(inputs.arrayOfItems)].length;
+    if (optionsWithCorrectType.allowDuplicates === false) {
+      const uniqueItemsCount = [...new Set(optionsWithCorrectType.arrayOfItems)]
+        .length;
 
       if (
-        options.maxLengthOfArray > uniqueItemsCount ||
-        options.minLengthOfArray > uniqueItemsCount
+        optionsWithCorrectType.maxLengthOfArray > uniqueItemsCount ||
+        optionsWithCorrectType.minLengthOfArray > uniqueItemsCount
       ) {
-        options.allowDuplicates = true;
+        optionsWithCorrectType.allowDuplicates = true;
       }
     }
     return options.unique;
   };
 
   protected generateItem: generateItemType = (
-    { arrayOfItems }: randomArraysInputs,
-    options: randomArraysOptions
+    options: allOptionTypes<true>
   ) => {
-    const min = options.minLengthOfArray ? options.minLengthOfArray : 0;
-    const max = options.maxLengthOfArray
-      ? options.maxLengthOfArray
-      : min < arrayOfItems.length
-      ? arrayOfItems.length
-      : min;
+    const optionsWithCorrectType = options as randomArrayOptions<true>;
 
-    const resultLength = Math.floor(Math.random() * (max - min + 1) + min);
+    const resultLength = Math.floor(
+      Math.random() *
+        (optionsWithCorrectType.maxLengthOfArray -
+          optionsWithCorrectType.minLengthOfArray) +
+        optionsWithCorrectType.minLengthOfArray
+    );
 
-    const uniqueItems = [...new Set(arrayOfItems)];
-
-    if (
-      options.allowDuplicates === false ||
-      options.allowDuplicates === undefined
-    )
-      if (
-        options.maxLengthOfArray > uniqueItems.length ||
-        options.minLengthOfArray > uniqueItems.length
-      ) {
-        options.allowDuplicates = true;
-      }
+    const uniqueItems = [...new Set(optionsWithCorrectType.arrayOfItems)];
 
     const itemArray: unknown[] = [];
 
     for (let i = 0; i < resultLength; i++) {
-      if (options.allowDuplicates) {
+      if (optionsWithCorrectType.allowDuplicates) {
         itemArray.push(
-          uniqueItems[Math.floor(Math.random() * arrayOfItems.length)]
+          uniqueItems[Math.floor(Math.random() * uniqueItems.length)]
         );
       } else {
         const item =
-          uniqueItems[Math.floor(Math.random() * arrayOfItems.length)];
+          uniqueItems[Math.floor(Math.random() * uniqueItems.length)];
 
         if (!itemArray.includes(item)) itemArray.push(item);
         else {
@@ -1226,144 +1278,98 @@ class RandomArrayClass extends GeneratorFactory {
       }
     }
 
-    if (options.keepOrder === undefined || options.keepOrder) {
+    if (optionsWithCorrectType.keepOrder) {
       itemArray.sort((a, b) => {
-        if (options.allowDuplicates === true && a === b) return 0;
+        if (optionsWithCorrectType.allowDuplicates === true && a === b)
+          return 0;
 
         return uniqueItems.indexOf(a) - uniqueItems.indexOf(b);
       });
     }
 
-    return { item: itemArray };
+    return itemArray;
   };
 
-  /**
-   * @param { array } arrayOfItems - Array of different elements
-   * @returns { array } Returns an array of element that randomly chosen from given array
-   * @example randomArray([ 9, 8, 4, {test:99})  ===>  [ 9, 8 ]
-   */
-  public randomArray: randomArrayType = (arrayOfItems) => {
-    return this.generateItem({ arrayOfItems }, {}, 0).item as unknown[];
+  public randomArray: randomArray = (options) => {
+    const populatedOptions = this.populateOptions("generator", options);
+    return this.generateArray(populatedOptions);
   };
 
-  /**
-   * @param { array } arrayOfItems - Array of different elements
-   * @param { object } options - properties of options object
-   * - keepOrder?: boolean = true
-   * - allowDuplicates: boolean = false
-   * - minLengthOfArray?: number = 0
-   * - maxLengthOfArray: number = maximum length
-   * - unique?: boolean = false
-   * - numberOfItems?: number
-   * - customMap?: (item: number | string, index: number) => any
-   * - customCompare?: (item: number | string, items: (number | string)[], index: number) => boolean
-   * - customLog?: (item: number | string, index: number, description: string, functionName: string) => void
-   * - showLogs?: boolean = false
-   * @returns { array } Returns array of random arrays that contains elements from given array
-   * @example randomArrays([ 9, 8, 4, {test:99}, [45]], { numberOfItems:2, unique:true })  ===>  [ [ 9, 8, 4, { test: 99 }, [ 45 ] ], [ [ 45 ] ] ]
-   */
-  public randomArrays: randomArraysType = (arrayOfItems, options = {}) => {
-    const dataObject = this.generateArray({ arrayOfItems }, options);
-
-    return options.numberOfItems === undefined
-      ? dataObject
-      : (dataObject.items as unknown[][]);
-  };
-
-  public generateFromArgObject: randomArraysArgType = ({
-    inputs: { arrayOfItems },
-    options,
-  }) => {
-    return this.randomArrays(arrayOfItems, options);
+  public randomArrayBlueprint: randomArrayBlueprint = (options) => {
+    const populatedOptions = this.populateOptions("blueprint", options);
+    return this.extractFunctionData(populatedOptions);
   };
 }
 
-interface blueprint {
-  [key: string]: generateFunctionReturn | unknown;
-}
+type blueprint = {
+  [key: string]: functionData | unknown;
+};
 
-type randomObjectsType = (
+type randomObjects = (
   blueprint: blueprint,
   numberOfItems: number,
   optionsOverall?: {
     showLogs?: boolean;
     progressUpdate?: (index: number) => void;
   }
-) => object[];
+) => Record<string, unknown>[];
 
-/**
- * @param { object } blueprint - Object that consists user-defined key and values. Values can be one item, functions that returns one item and functions that listed in description.
- * @param { number } numberOfItems
- * @returns { Array } Returns array of objects
- * @descriptions Listed functions should be used without specifying options.numberOfItems otherwise they will be accepted as one item.
- * - randomNumbers
- * - randomHexColors
- * - gradualValue
- * - randomsFromArray
- * - randomIDs
- * - randomCustomFunction
- * - randomStrings
- * - randomEmails
- * @example   randomObjects({
- * Number: randomNumbers(4, 50, { onlyIntegers: true }),
- * Hex: randomHexColors({ unique: true }),
- * Company: randomString(1, 1, { lib: ["noun"] }),
- * Planet: "Earth"}, 2 )  ===>
- * [{ Number: 32,
- *  Hex: '#95cfe7',
- *  Company: 'ground',
- *  Planet: 'Earth' },
- * {Number: 17,
- *  Hex: '#23a7ce',
- *  Company: 'ground',
- *  Planet: 'Earth' }]
- */
-const randomObjects: randomObjectsType = (
+const randomObjects: randomObjects = (
   blueprint,
   numberOfItems,
   { showLogs = false, progressUpdate } = {}
 ) => {
   const keys: string[] = Object.keys(blueprint);
 
-  const openedBlueprint = {};
+  const openedBlueprint: Record<
+    string,
+    { items: unknown[]; static: false } | { item: unknown; static: true }
+  > = {};
 
-  const resultArray: object[] = [];
+  const resultArray: Record<string, unknown>[] = [];
 
   for (let i = 0; i < keys.length; i++) {
-    const currentData: generateFunctionReturn | unknown = blueprint[keys[i]];
+    const currentData: functionData | unknown = blueprint[keys[i]];
 
-    if (!Object.keys(currentData).includes("functionData")) {
-      openedBlueprint[keys[i]] = { data: currentData, single: true };
+    if (typeof currentData !== "object") {
+      openedBlueprint[keys[i]] = {
+        item: currentData,
+        static: true,
+      };
+      continue;
+    } else if (
+      !Object.keys(currentData as object).includes("functionOptions")
+    ) {
+      openedBlueprint[keys[i]] = {
+        item: currentData,
+        static: true,
+      };
       continue;
     } else {
-      const functionData: functionData = (currentData as generateFunctionReturn)
-        .functionData;
-      functionData.arguments.options.numberOfItems = numberOfItems;
-      functionData.arguments.options.showLogs =
-        functionData.arguments.options.showLogs || showLogs;
+      const functionData: functionData = currentData as functionData;
 
-      const { inputs, options } = functionData.arguments;
+      const options = functionData.functionOptions;
 
-      const res = functionData.functionCall({
-        inputs,
-        options,
+      const items = functionData.functionCall({
+        ...options,
+        numberOfItems,
+        showLogs,
       });
 
-      openedBlueprint[keys[i]] = { data: res, single: false };
+      openedBlueprint[keys[i]] = { items, static: false };
 
       if (progressUpdate) progressUpdate(i);
     }
   }
 
   for (let index = 0; index < numberOfItems; index++) {
-    const currentObject = {};
+    const currentObject: Record<string, unknown> = {};
 
     for (let i = 0; i < keys.length; i++) {
-      const currentData: { data: unknown; single: boolean } =
-        openedBlueprint[keys[i]];
-      currentObject[keys[i]] = currentData.single
-        ? currentData.data
-        : currentData.data[index];
+      const currentData = openedBlueprint[keys[i]];
+      currentObject[keys[i]] = currentData.static
+        ? currentData.item
+        : currentData.items[index];
     }
 
     resultArray.push(currentObject);
@@ -1372,55 +1378,30 @@ const randomObjects: randomObjectsType = (
   return resultArray;
 };
 
-const {
-  randomNumber,
-  randomNumbers,
-  generateFromArgObject: randomNumbersArg,
-} = new RandomNumbersClass();
-const { gradualValue, generateFromArgObject: gradualValueArg } =
-  new GradualValueClass();
-const {
-  randomFromArray,
-  randomsFromArray,
-  generateFromArgObject: randomsFromArrayArg,
-} = new RandomFromArrayClass();
-const {
-  randomID,
-  randomIDs,
-  generateFromArgObject: randomIDsArg,
-} = new randomIDClass();
-const { randomCustomFunction, generateFromArgObject: randomCustomFunctionArg } =
+const { randomNumbers, randomNumbersBlueprint } = new RandomNumbersClass();
+const { gradualValue, gradualValueBlueprint } = new GradualValueClass();
+const { randomFromArray, randomFromArrayBlueprint } =
+  new RandomFromArrayClass();
+const { randomIDs, randomIDsBlueprint } = new RandomIDsClass();
+const { randomCustomFunction, randomCustomFunctionBlueprint } =
   new RandomCustomFunctionClass();
-const {
-  randomString,
-  randomStrings,
-  generateFromArgObject: randomStringsArg,
-} = new RandomStringClass();
-const {
-  randomArray,
-  randomArrays,
-  generateFromArgObject: randomArraysArg,
-} = new RandomArrayClass();
+const { randomStrings, randomStringsBlueprint } = new RandomStringsClass();
+const { randomArray, randomArrayBlueprint } = new RandomArrayClass();
 
 export {
-  randomNumber,
   randomNumbers,
-  randomNumbersArg,
+  randomNumbersBlueprint,
   gradualValue,
-  gradualValueArg,
+  gradualValueBlueprint,
   randomFromArray,
-  randomsFromArray,
-  randomsFromArrayArg,
-  randomID,
+  randomFromArrayBlueprint,
   randomIDs,
-  randomIDsArg,
+  randomIDsBlueprint,
   randomCustomFunction,
-  randomCustomFunctionArg,
-  randomString,
+  randomCustomFunctionBlueprint,
   randomStrings,
-  randomStringsArg,
+  randomStringsBlueprint,
   randomArray,
-  randomArrays,
-  randomArraysArg,
+  randomArrayBlueprint,
   randomObjects,
 };
