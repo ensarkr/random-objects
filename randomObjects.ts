@@ -6,7 +6,7 @@ import { listOfNouns } from "./sources/listOfNouns";
 type baseBlueprintOptions<POPULATED extends boolean> = POPULATED extends true
   ? {
       unique: boolean;
-      progressUpdate: progressUpdate;
+      progressUpdate: progressUpdateT;
       showLogs: boolean;
       reCreateLimit: number | null;
       customMap?(item: unknown, index: number): unknown;
@@ -14,7 +14,7 @@ type baseBlueprintOptions<POPULATED extends boolean> = POPULATED extends true
     }
   : {
       unique?: boolean;
-      progressUpdate?: progressUpdate;
+      progressUpdate?: progressUpdateT;
       showLogs?: boolean;
       reCreateLimit?: number | null;
       customMap?(item: unknown, index: number): unknown;
@@ -25,7 +25,7 @@ type baseGeneratorOptions<POPULATED extends boolean> = POPULATED extends true
   ? {
       numberOfItems: number;
       unique: boolean;
-      progressUpdate: progressUpdate;
+      progressUpdate: progressUpdateT;
       showLogs: boolean;
       reCreateLimit: number | null;
       customMap?(item: unknown, index: number): unknown;
@@ -34,14 +34,14 @@ type baseGeneratorOptions<POPULATED extends boolean> = POPULATED extends true
   : {
       numberOfItems?: number;
       unique?: boolean;
-      progressUpdate?: progressUpdate;
+      progressUpdate?: progressUpdateT;
       showLogs?: boolean;
       reCreateLimit?: number | null;
       customMap?(item: unknown, index: number): unknown;
       customCompare?(item: unknown, items: unknown[], index: number): boolean;
     };
 
-type progressUpdate = {
+type progressUpdateT = {
   uniqueCheckFailed?: (functionName: string, limit?: number | null) => void;
   afterItemCreated?: (
     item: unknown,
@@ -63,7 +63,7 @@ type progressUpdate = {
   ) => void;
 };
 
-type functionData = {
+type functionDataT = {
   functionOptions: allBlueprintOptionTypes<true>;
   functionCall: generateArrayType;
 };
@@ -245,7 +245,7 @@ abstract class RandomGeneratorFactory {
 
   protected extractFunctionData(
     options: allBlueprintOptionTypes<true>
-  ): functionData {
+  ): functionDataT {
     return {
       functionOptions: options,
       functionCall: this.generateArray,
@@ -275,11 +275,11 @@ type randomNumbersOptions<POPULATED extends boolean> =
 type randomNumbersBlueprintOptions<POPULATED extends boolean> =
   randomNumbersInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type randomNumbers = (options?: randomNumbersOptions<false>) => unknown[];
+type randomNumbersT = (options?: randomNumbersOptions<false>) => unknown[];
 
-type randomNumbersBlueprint = (
-  options?: randomNumbersOptions<false>
-) => functionData;
+type randomNumbersBlueprintT = (
+  options?: randomNumbersBlueprintOptions<false>
+) => functionDataT;
 
 class RandomNumbersClass extends RandomGeneratorFactory {
   constructor() {
@@ -398,12 +398,12 @@ class RandomNumbersClass extends RandomGeneratorFactory {
     return item;
   };
 
-  public randomNumbers: randomNumbers = (options = {}) => {
+  public randomNumbers: randomNumbersT = (options = {}) => {
     const populatedOptions = this.populateOptions("generator", options);
     return this.generateArray(populatedOptions);
   };
 
-  public randomNumbersBlueprint: randomNumbersBlueprint = (options = {}) => {
+  public randomNumbersBlueprint: randomNumbersBlueprintT = (options = {}) => {
     const populatedOptions = this.populateOptions("blueprint", options);
     return this.extractFunctionData(populatedOptions);
   };
@@ -427,11 +427,11 @@ type randomFromArrayOptions<POPULATED extends boolean> =
 type randomFromArrayBlueprintOptions<POPULATED extends boolean> =
   randomFromArrayInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type randomFromArray = (options: randomFromArrayOptions<false>) => unknown[];
+type randomFromArrayT = (options: randomFromArrayOptions<false>) => unknown[];
 
-type randomFromArrayBlueprint = (
-  options: randomFromArrayOptions<false>
-) => functionData;
+type randomFromArrayBlueprintT = (
+  options: randomFromArrayBlueprintOptions<false>
+) => functionDataT;
 
 class RandomFromArrayClass extends RandomGeneratorFactory {
   constructor() {
@@ -514,12 +514,12 @@ class RandomFromArrayClass extends RandomGeneratorFactory {
     return item;
   };
 
-  public randomFromArray: randomFromArray = (options) => {
+  public randomFromArray: randomFromArrayT = (options) => {
     const populatedOptions = this.populateOptions("generator", options);
     return this.generateArray(populatedOptions);
   };
 
-  public randomFromArrayBlueprint: randomFromArrayBlueprint = (options) => {
+  public randomFromArrayBlueprint: randomFromArrayBlueprintT = (options) => {
     const populatedOptions = this.populateOptions("blueprint", options);
     return this.extractFunctionData(populatedOptions);
   };
@@ -547,11 +547,11 @@ type randomIDsOptions<POPULATED extends boolean> = randomIDsInputs<POPULATED> &
 type randomIDsBlueprintOptions<POPULATED extends boolean> =
   randomIDsInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type randomIDs = (options?: randomIDsOptions<false>) => unknown[];
+type randomIDsT = (options?: randomIDsOptions<false>) => unknown[];
 
-type randomIDsBlueprint = (
+type randomIDsBlueprintT = (
   options?: randomIDsBlueprintOptions<false>
-) => functionData;
+) => functionDataT;
 
 class RandomIDsClass extends RandomGeneratorFactory {
   constructor() {
@@ -765,12 +765,12 @@ class RandomIDsClass extends RandomGeneratorFactory {
     }
   };
 
-  public randomIDs: randomIDs = (options = {}) => {
+  public randomIDs: randomIDsT = (options = {}) => {
     const populatedOptions = this.populateOptions("generator", options);
     return this.generateArray(populatedOptions);
   };
 
-  public randomIDsBlueprint: randomIDsBlueprint = (options = {}) => {
+  public randomIDsBlueprint: randomIDsBlueprintT = (options = {}) => {
     const populatedOptions = this.populateOptions("blueprint", options);
     return this.extractFunctionData(populatedOptions);
   };
@@ -794,11 +794,11 @@ type gradualValueOptions<POPULATED extends boolean> =
 type gradualValueBlueprintOptions<POPULATED extends boolean> =
   gradualValueInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type gradualValue = (options?: gradualValueOptions<false>) => unknown[];
+type gradualValueT = (options?: gradualValueOptions<false>) => unknown[];
 
-type gradualValueBlueprint = (
+type gradualValueBlueprintT = (
   options?: gradualValueBlueprintOptions<false>
-) => functionData;
+) => functionDataT;
 
 class GradualValueClass extends RandomGeneratorFactory {
   constructor() {
@@ -869,12 +869,12 @@ class GradualValueClass extends RandomGeneratorFactory {
     return options.unique;
   };
 
-  public gradualValue: gradualValue = (options = {}) => {
+  public gradualValue: gradualValueT = (options = {}) => {
     const populatedOptions = this.populateOptions("generator", options);
     return this.generateArray(populatedOptions);
   };
 
-  public gradualValueBlueprint: gradualValueBlueprint = (options = {}) => {
+  public gradualValueBlueprint: gradualValueBlueprintT = (options = {}) => {
     const populatedOptions = this.populateOptions("blueprint", options);
     return this.extractFunctionData(populatedOptions);
   };
@@ -892,13 +892,13 @@ type randomCustomFunctionOptions<POPULATED extends boolean> =
 type randomCustomFunctionBlueprintOptions<POPULATED extends boolean> =
   randomCustomFunctionInputs & baseBlueprintOptions<POPULATED>;
 
-type randomCustomFunction = (
+type randomCustomFunctionT = (
   options: randomCustomFunctionOptions<false>
 ) => unknown[];
 
-type randomCustomFunctionBlueprint = (
+type randomCustomFunctionBlueprintT = (
   options: randomCustomFunctionBlueprintOptions<false>
-) => functionData;
+) => functionDataT;
 
 class RandomCustomFunctionClass extends RandomGeneratorFactory {
   constructor() {
@@ -952,12 +952,12 @@ class RandomCustomFunctionClass extends RandomGeneratorFactory {
     return optionsWithCorrectType.unique;
   };
 
-  public randomCustomFunction: randomCustomFunction = (options) => {
+  public randomCustomFunction: randomCustomFunctionT = (options) => {
     const populatedOptions = this.populateOptions("generator", options);
     return this.generateArray(populatedOptions);
   };
 
-  public randomCustomFunctionBlueprint: randomCustomFunctionBlueprint = (
+  public randomCustomFunctionBlueprint: randomCustomFunctionBlueprintT = (
     options
   ) => {
     const populatedOptions = this.populateOptions("blueprint", options);
@@ -989,11 +989,11 @@ type randomStringsOptions<POPULATED extends boolean> =
 type randomStringsBlueprintOptions<POPULATED extends boolean> =
   randomStringsInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type randomStrings = (options?: randomStringsOptions<false>) => unknown[];
+type randomStringsT = (options?: randomStringsOptions<false>) => unknown[];
 
-type randomStringsBlueprint = (
+type randomStringsBlueprintT = (
   options?: randomStringsBlueprintOptions<false>
-) => functionData;
+) => functionDataT;
 
 class RandomStringsClass extends RandomGeneratorFactory {
   constructor() {
@@ -1129,12 +1129,12 @@ class RandomStringsClass extends RandomGeneratorFactory {
     return item;
   };
 
-  public randomStrings: randomStrings = (options = {}) => {
+  public randomStrings: randomStringsT = (options = {}) => {
     const populatedOptions = this.populateOptions("generator", options);
     return this.generateArray(populatedOptions);
   };
 
-  public randomStringsBlueprint: randomStringsBlueprint = (options = {}) => {
+  public randomStringsBlueprint: randomStringsBlueprintT = (options = {}) => {
     const populatedOptions = this.populateOptions("generator", options);
     return this.extractFunctionData(populatedOptions);
   };
@@ -1164,11 +1164,11 @@ type randomArrayOptions<POPULATED extends boolean> =
 type randomArrayBlueprintOptions<POPULATED extends boolean> =
   randomArrayInputs<POPULATED> & baseBlueprintOptions<POPULATED>;
 
-type randomArray = (options: randomArrayOptions<false>) => unknown[];
+type randomArrayT = (options: randomArrayOptions<false>) => unknown[];
 
-type randomArrayBlueprint = (
+type randomArrayBlueprintT = (
   options: randomArrayBlueprintOptions<false>
-) => functionData;
+) => functionDataT;
 
 class RandomArrayClass extends RandomGeneratorFactory {
   constructor() {
@@ -1290,22 +1290,22 @@ class RandomArrayClass extends RandomGeneratorFactory {
     return itemArray;
   };
 
-  public randomArray: randomArray = (options) => {
+  public randomArray: randomArrayT = (options) => {
     const populatedOptions = this.populateOptions("generator", options);
     return this.generateArray(populatedOptions);
   };
 
-  public randomArrayBlueprint: randomArrayBlueprint = (options) => {
+  public randomArrayBlueprint: randomArrayBlueprintT = (options) => {
     const populatedOptions = this.populateOptions("blueprint", options);
     return this.extractFunctionData(populatedOptions);
   };
 }
 
 type blueprint = {
-  [key: string]: functionData | unknown;
+  [key: string]: functionDataT | unknown;
 };
 
-type randomObjects = (
+type randomObjectsT = (
   blueprint: blueprint,
   numberOfItems: number,
   optionsOverall?: {
@@ -1314,7 +1314,7 @@ type randomObjects = (
   }
 ) => Record<string, unknown>[];
 
-const randomObjects: randomObjects = (
+const randomObjects: randomObjectsT = (
   blueprint,
   numberOfItems,
   { showLogs = false, progressUpdate } = {}
@@ -1329,7 +1329,7 @@ const randomObjects: randomObjects = (
   const resultArray: Record<string, unknown>[] = [];
 
   for (let i = 0; i < keys.length; i++) {
-    const currentData: functionData | unknown = blueprint[keys[i]];
+    const currentData: functionDataT | unknown = blueprint[keys[i]];
 
     if (typeof currentData !== "object") {
       openedBlueprint[keys[i]] = {
@@ -1346,7 +1346,7 @@ const randomObjects: randomObjects = (
       };
       continue;
     } else {
-      const functionData: functionData = currentData as functionData;
+      const functionData: functionDataT = currentData as functionDataT;
 
       const options = functionData.functionOptions;
 
